@@ -35,8 +35,12 @@ final class Scheduler {
         itemRequests.sort { $0.0 < $1.0 }
 
         let daily = dailyRequests(entries: entries, now: now)
-        let budget = max(0, limit - daily.count)
+        var medRequests = medicineRequests(Store.allMedicines(), now: now)
+        medRequests.sort { $0.0 < $1.0 }
+        let meds = Array(medRequests.prefix(max(0, limit - daily.count - 8)))
+        let budget = max(0, limit - daily.count - meds.count)
         for (_, r) in itemRequests.prefix(budget) { try? await center.add(r) }
+        for (_, r) in meds { try? await center.add(r) }
         for (_, r) in daily { try? await center.add(r) }
 
         await AlarmService.rebuild(entries: open, now: now)
@@ -87,6 +91,58 @@ final class Scheduler {
         return out
     }
 
+    // MARK: - medicines
+
+    /// Dose alerts for the next 3 days (repeating every 15 minutes for the next 24 hours until «أخذتها»),
+    /// plus a warning 3 days before the open pack expires and on the day itself.
+    private func medicineRequests(_ meds: [Medicine], now: Date) -> [(Date, UNNotificationRequest)] {
+        var out: [(Date, UNNotificationRequest)] = []
+        let today = DF.startOfDay(now)
+
+        func add(_ id: String, _ at: Date, _ title: String, _ body: String, info: [String: Any], category: String) {
+            guard at > now else { return }
+            out.append((at, NotificationFactory.request(id: id, at: at, title: title, body: body, sensitive: true,
+                                                        category: category, uid: nil, extra: info)))
+        }
+
+        for m in meds {
+            let uid = m.uid.uuidString
+            let slots = m.slots
+            for offset in 0..<3 {
+                let day = DF.addDays(offset, to: today)
+                guard m.isActive(on: day) else { continue }
+                for (idx, slot) in slots.enumerated() where !m.taken(day, slot) {
+                    let at = m.slotDate(day, slot)
+                    let info: [String: Any] = ["med": uid, "slot": slot, "day": DF.dayKey(day)]
+                    let note = m.doseNote.isEmpty ? "" : "\(m.doseNote) · "
+                    add("dose-\(uid)-\(DF.dayKey(day))-\(slot)-0", at, "\(m.name) — وقت الجرعة",
+                        "\(note)الجرعة \(idx + 1) من \(slots.count)", info: info, category: "DOSE")
+                    if at.timeIntervalSince(now) < 24 * 3600 {
+                        for k in 1...2 {
+                            add("dose-\(uid)-\(DF.dayKey(day))-\(slot)-\(k)", at.addingTimeInterval(TimeInterval(k * 15 * 60)),
+                                "\(m.name) — ما سجّلت الجرعة", "اضغط «أخذتها» إذا أخذتها", info: info, category: "DOSE")
+                        }
+                    }
+                }
+            }
+            if let snooze = m.snoozeUntil, snooze > now, m.snoozeSlot >= 0 {
+                add("dose-\(uid)-snooze", snooze, "\(m.name) — وقت الجرعة", "ذكّرتك بعد 15 دقيقة كما طلبت",
+                    info: ["med": uid, "slot": m.snoozeSlot, "day": DF.dayKey(snooze)], category: "DOSE")
+            }
+            if let expiry = m.expiry, !m.courseFinished {
+                let info: [String: Any] = ["med": uid]
+                if let warn = DF.greg.date(bySettingHour: 9, minute: 0, second: 0, of: DF.addDays(-3, to: expiry)) {
+                    add("exp-\(uid)-warn", warn, "\(m.name) تنتهي بعد 3 أيام", "جهّز علبة جديدة.", info: info, category: "MED")
+                }
+                if let end = DF.greg.date(bySettingHour: 9, minute: 0, second: 0, of: expiry) {
+                    add("exp-\(uid)-end", end, "\(m.name) انتهت صلاحيتها اليوم", "ارمها وافتح علبة جديدة، واضغط «فتحت علبة جديدة».",
+                        info: info, category: "MED")
+                }
+            }
+        }
+        return out
+    }
+
     // MARK: - morning and evening
 
     private func dailyRequests(entries: [Entry], now: Date) -> [(Date, UNNotificationRequest)] {
@@ -96,7 +152,7 @@ final class Scheduler {
         let evening = Prefs.eveningMinutes
         let loggedToday = Prefs.lastEveningLog == DF.dayKey(now)
 
-        for i in 0..<7 {
+        for i in 0..<4 {
             let day = DF.addDays(i, to: today)
             let m = day.addingTimeInterval(TimeInterval(morning * 60))
             if m > now {
@@ -127,8 +183,10 @@ final class Scheduler {
     private func morningBody(day: Date, entries: [Entry]) -> String {
         let items = Agenda.items(on: day, entries: entries, includeClosed: false)
         let overdue = DF.daysBetween(Date(), day) == 0 ? Agenda.overdue(entries: entries).count : 0
+        let doses = Store.allMedicines().filter { $0.isActive(on: day) }.reduce(0) { $0 + $1.slots.count }
+        let medsTail = doses > 0 ? " · أدويتك: \(doses) جرعات" : ""
         guard !items.isEmpty else {
-            return overdue > 0 ? "يومك فاضي من المواعيد، وعندك \(overdue) متأخرة." : "يومك فاضي من المواعيد. أضف أي شيء ببالك."
+            return (overdue > 0 ? "يومك فاضي من المواعيد، وعندك \(overdue) متأخرة." : "يومك فاضي من المواعيد.") + medsTail
         }
         let urgent = items.filter { $0.importance == .urgent }.count
         let important = items.filter { $0.importance == .important }.count
@@ -141,13 +199,14 @@ final class Scheduler {
         }.joined(separator: "، ")
         let prefix = head.isEmpty ? "عندك \(items.count): " : "عندك \(head.joined(separator: " و")): "
         let tail = overdue > 0 ? " · \(overdue) متأخرة" : ""
-        return prefix + list + tail
+        return prefix + list + tail + medsTail
     }
 }
 
 enum NotificationFactory {
     static func request(id: String, at: Date, title: String, body: String,
-                        sensitive: Bool, category: String, uid: String?) -> UNNotificationRequest {
+                        sensitive: Bool, category: String, uid: String?,
+                        extra: [String: Any] = [:]) -> UNNotificationRequest {
         let c = UNMutableNotificationContent()
         c.title = title
         c.body = body
@@ -155,7 +214,9 @@ enum NotificationFactory {
         c.categoryIdentifier = category
         c.threadIdentifier = category
         if sensitive { c.interruptionLevel = .timeSensitive }
-        if let uid { c.userInfo = ["uid": uid] }
+        var info = extra
+        if let uid { info["uid"] = uid }
+        if !info.isEmpty { c.userInfo = info }
         let comps = DF.greg.dateComponents([.year, .month, .day, .hour, .minute, .second], from: at)
         return UNNotificationRequest(identifier: id, content: c,
                                      trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false))
@@ -170,7 +231,11 @@ enum NotificationFactory {
         let open = UNNotificationAction(identifier: "OPEN", title: "افتح المراجعة", options: [.foreground])
         let evening = UNNotificationCategory(identifier: "EVENING", actions: [log, open], intentIdentifiers: [], options: [])
         let morning = UNNotificationCategory(identifier: "MORNING", actions: [], intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([item, evening, morning])
+        let taken = UNNotificationAction(identifier: "TAKEN", title: "أخذتها", options: [])
+        let snooze15 = UNNotificationAction(identifier: "SNOOZE15", title: "بعد 15 دقيقة", options: [])
+        let dose = UNNotificationCategory(identifier: "DOSE", actions: [taken, snooze15], intentIdentifiers: [], options: [])
+        let med = UNNotificationCategory(identifier: "MED", actions: [], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([item, evening, morning, dose, med])
     }
 
     static func sendTest(sensitive: Bool) async {

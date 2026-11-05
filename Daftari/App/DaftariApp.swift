@@ -36,9 +36,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let content = response.notification.request.content
         let category = content.categoryIdentifier
         let uid = content.userInfo["uid"] as? String
+        let med = content.userInfo["med"] as? String
+        let slot = content.userInfo["slot"] as? Int
+        let day = content.userInfo["day"] as? String
         let text = (response as? UNTextInputNotificationResponse)?.userText
         Task { @MainActor in
-            NotificationRouter.handle(action: action, category: category, uid: uid, text: text)
+            NotificationRouter.handle(action: action, category: category, uid: uid, text: text,
+                                      med: med, slot: slot, day: day)
             completionHandler()
         }
     }

@@ -21,7 +21,8 @@ enum Demo {
         switch screen {
         case "calendar": app.tab = 1
         case "ideas": app.tab = 2
-        case "things": app.tab = 3
+        case "things", "meds": app.tab = 3
+        case "medadd": app.tab = 3; app.open(.medicine(nil))
         case "add": app.open(.add(prefill: "موعد الأسنان الثلاثاء الجاي 4 العصر", date: nil, kind: nil))
         case "voice": app.open(.voice(.idea))
         case "evening": app.open(.evening)
@@ -65,6 +66,20 @@ enum Demo {
         let j1 = Entry(title: "خلصت الجلسات بدري، وراجعت ملفين، والعصر مشوار مع العيال", kind: .journal)
         j1.createdAt = now.addingTimeInterval(-25 * 3600)
         [i1, i2, j1].forEach { ctx.insert($0) }
+
+        let m1 = Medicine(name: "قطرة العين")
+        m1.openedAt = DF.addDays(-27, to: today)
+        m1.shelfDays = 30
+        m1.doseMinutes = [8 * 60, 14 * 60, 22 * 60]
+        m1.doseNote = "قطرة وحدة في كل عين"
+        m1.setTaken(key: Medicine.key(now, 8 * 60), true)
+        let m2 = Medicine(name: "قطرة ثانية")
+        m2.openedAt = DF.addDays(-7, to: today)
+        m2.shelfDays = 30
+        m2.doseMinutes = [9 * 60, 21 * 60]
+        m2.setTaken(key: Medicine.key(now, 9 * 60), true)
+        ctx.insert(m1)
+        ctx.insert(m2)
         try? ctx.save()
     }
 }

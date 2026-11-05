@@ -15,9 +15,11 @@ enum Route: Identifiable, Equatable {
     case evening
     case morning
     case settings
+    case medicine(UUID?)
 
     var id: String {
         switch self {
+        case .medicine(let u): return "med-\(u?.uuidString ?? "new")"
         case .add: return "add"
         case .edit(let u): return "edit-\(u.uuidString)"
         case .convert(let u): return "convert-\(u.uuidString)"
@@ -120,9 +122,23 @@ enum EntryActions {
 
 @MainActor
 enum NotificationRouter {
-    static func handle(action: String, category: String, uid: String?, text: String?) {
+    static func handle(action: String, category: String, uid: String?, text: String?,
+                       med: String? = nil, slot: Int? = nil, day: String? = nil) {
         let entry = uid.flatMap(UUID.init(uuidString:)).flatMap { Store.entry(uid: $0) }
+        let medicine = med.flatMap(UUID.init(uuidString:)).flatMap { Store.medicine(uid: $0) }
         switch action {
+        case "TAKEN":
+            if let medicine, let slot {
+                medicine.setTaken(key: "\(day ?? DF.dayKey(Date()))|\(slot)", true)
+                if medicine.snoozeSlot == slot { medicine.snoozeUntil = nil }
+                MedActions.commit()
+            }
+        case "SNOOZE15":
+            if let medicine, let slot {
+                medicine.snoozeUntil = Date().addingTimeInterval(15 * 60)
+                medicine.snoozeSlot = slot
+                MedActions.commit()
+            }
         case "DONE":
             if let entry { EntryActions.markDone(entry) }
         case "SNOOZE30":
@@ -140,6 +156,7 @@ enum NotificationRouter {
             switch category {
             case "EVENING": AppState.shared.open(.evening)
             case "MORNING": AppState.shared.open(.morning)
+            case "DOSE", "MED": AppState.shared.tab = 3
             default:
                 AppState.shared.tab = 0
                 if let entry { AppState.shared.open(.edit(entry.uid)) }

@@ -5,7 +5,7 @@ import SwiftData
 enum Store {
     static let container: ModelContainer = {
         do {
-            return try ModelContainer(for: Entry.self)
+            return try ModelContainer(for: Entry.self, Medicine.self)
         } catch {
             fatalError("تعذر فتح قاعدة البيانات: \(error)")
         }
@@ -19,6 +19,14 @@ enum Store {
 
     static func entry(uid: UUID) -> Entry? {
         allEntries().first { $0.uid == uid }
+    }
+
+    static func allMedicines() -> [Medicine] {
+        (try? context.fetch(FetchDescriptor<Medicine>())) ?? []
+    }
+
+    static func medicine(uid: UUID) -> Medicine? {
+        allMedicines().first { $0.uid == uid }
     }
 
     static func save() {

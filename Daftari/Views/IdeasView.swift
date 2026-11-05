@@ -123,31 +123,3 @@ struct IdeasView: View {
         focused = false
     }
 }
-
-struct ThingsView: View {
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("أشيائي").font(.system(size: 30, weight: .bold)).foregroundStyle(T.ink)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Image(systemName: "shippingbox")
-                            .font(.system(size: 26))
-                            .foregroundStyle(T.ideaInk)
-                            .frame(width: 56, height: 56)
-                            .background(T.ideaSoft, in: RoundedRectangle(cornerRadius: 16))
-                        Text("في المرحلة الثانية").font(.system(size: 19, weight: .bold)).foregroundStyle(T.ink)
-                        Text("هنا تكون تجديداتك (الاستمارة، الرخصة، التأمين، الفحص، الجواز)، وضمانات أجهزتك مع صور فواتيرها، وصيانة السيارة بالكيلو أو بالتاريخ — على شكل الدوائر اللي اخترتها، تقل كل ما قرب الموعد.")
-                            .font(.system(size: 15)).foregroundStyle(T.muted).lineSpacing(4)
-                    }
-                    .padding(20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .card(radius: 24)
-                }
-                .padding(20)
-            }
-            .background(T.bg.ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
-        }
-    }
-}

@@ -4,6 +4,7 @@ import SwiftData
 /// «اليوم — هادئ مع بطاقات»: header, the big "next" card, four cards, then the day's list.
 struct TodayView: View {
     @Query(sort: \Entry.createdAt) private var entries: [Entry]
+    @Query(sort: \Medicine.createdAt) private var meds: [Medicine]
     @ObservedObject private var app = AppState.shared
     @State private var showTasks = false
 
@@ -36,6 +37,9 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 16) {
             header(now: now)
             NextCard(item: Agenda.next(after: now, entries: entries), now: now)
+            if meds.contains(where: { !$0.courseFinished }) {
+                MedsTodayCard(meds: meds.filter { !$0.courseFinished }, now: now)
+            }
             cards(now: now, todayItems: todayItems, overdue: overdue)
 
             if !overdue.isEmpty {

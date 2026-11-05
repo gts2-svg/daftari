@@ -54,6 +54,8 @@ struct RootView: View {
             MorningBriefView()
         case .settings:
             SettingsView()
+        case .medicine(let uid):
+            MedicineSheet(editingUID: uid)
         case .voice:
             EmptyView()
         }
