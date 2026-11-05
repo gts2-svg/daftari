@@ -25,7 +25,7 @@ struct EveningCheckView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(DF.time(Date())) · \(DF.weekday(Date()))").font(.system(size: 14)).foregroundStyle(T.nightMuted)
+                    Text(verbatim: "\(DF.time(Date())) · \(DF.weekday(Date()))").font(.system(size: 14)).foregroundStyle(T.nightMuted)
                     Text("وش صار اليوم؟").font(.system(size: 32, weight: .bold))
                     Text("علّم على اللي صار، والباقي انقله لبكرة.").font(.system(size: 14)).foregroundStyle(T.nightMuted)
                 }
@@ -141,8 +141,8 @@ struct MorningBriefView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(DF.time(now)) · \(DF.weekday(now))").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: 0x7A5A20))
-                    Text("\(DF.greeting(now))\nهذا يومك").font(.system(size: 32, weight: .bold)).lineSpacing(4)
+                    Text(verbatim: "\(DF.time(now)) · \(DF.weekday(now))").font(.system(size: 15, weight: .semibold)).foregroundStyle(Color(hex: 0x7A5A20))
+                    Text(verbatim: "\(DF.greeting(now))\nهذا يومك").font(.system(size: 32, weight: .bold)).lineSpacing(4)
                     Text(DF.fullDate(now)).font(.system(size: 14)).foregroundStyle(Color(hex: 0x6B5A40))
                 }
 
@@ -204,7 +204,7 @@ struct MorningBriefView: View {
 
     private func counter(_ n: Int, _ label: String, _ color: Color) -> some View {
         VStack(spacing: 2) {
-            Text("\(n)").font(.system(size: 26, weight: .bold)).foregroundStyle(color)
+            Text(verbatim: "\(n)").font(.system(size: 26, weight: .bold)).foregroundStyle(color)
             Text(label).font(.system(size: 12)).foregroundStyle(Color(hex: 0x6B5A40))
         }
         .frame(maxWidth: .infinity)

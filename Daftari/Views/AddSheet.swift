@@ -131,7 +131,7 @@ struct AddSheet: View {
             if hasDate {
                 DatePicker("اليوم", selection: Binding(get: { day }, set: { day = $0; manualDate = true }),
                            displayedComponents: .date)
-                Text("\(DF.weekday(day)) · \(DF.fullDate(day))")
+                Text(verbatim: "\(DF.weekday(day)) · \(DF.fullDate(day))")
                     .font(.system(size: 13)).foregroundStyle(T.muted)
                 Toggle("له وقت", isOn: Binding(get: { hasTime }, set: { hasTime = $0; manualDate = true }))
                     .font(.system(size: 15, weight: .semibold))

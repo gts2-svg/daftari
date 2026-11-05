@@ -37,7 +37,7 @@ struct MedsTodayCard: View {
                     Text("أدويتي اليوم").font(.system(size: 15, weight: .bold)).foregroundStyle(MedColors.ink)
                     Spacer()
                     if total > 0 {
-                        Text("\(taken) من \(total) جرعات").font(.system(size: 13)).foregroundStyle(T.muted)
+                        Text(verbatim: "\(taken) من \(total) جرعات").font(.system(size: 13)).foregroundStyle(T.muted)
                     }
                 }
                 ForEach(active, id: \.uid) { m in
@@ -58,7 +58,7 @@ struct MedsTodayCard: View {
                 ForEach(expiring, id: \.uid) { m in
                     HStack(spacing: 8) {
                         Image(systemName: "clock")
-                        Text("\(m.name): \(m.expiryText(now: now))").lineLimit(2)
+                        Text(verbatim: "\(m.name): \(m.expiryText(now: now))").lineLimit(2)
                         Spacer(minLength: 0)
                     }
                     .font(.system(size: 13))

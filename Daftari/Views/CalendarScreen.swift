@@ -141,10 +141,10 @@ struct CalendarScreen: View {
             selected = day
         } label: {
             VStack(spacing: 1) {
-                Text("\(main)")
+                Text(verbatim: "\(main)")
                     .font(.system(size: 16, weight: isSelected || isToday ? .bold : .semibold))
                     .monospacedDigit()
-                Text("\(sub)")
+                Text(verbatim: "\(sub)")
                     .font(.system(size: 10))
                     .foregroundStyle(isSelected ? Color.white.opacity(0.85) : T.muted)
                 Circle()
@@ -173,7 +173,7 @@ struct CalendarScreen: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(DF.weekday(selected)) \(DF.dayMonth(selected, cal: cal, year: false))")
+                    Text(verbatim: "\(DF.weekday(selected)) \(DF.dayMonth(selected, cal: cal, year: false))")
                         .font(.system(size: 16, weight: .bold)).foregroundStyle(T.ink)
                     Text(DF.dayMonth(selected, cal: other)).font(.system(size: 12)).foregroundStyle(T.muted)
                 }
