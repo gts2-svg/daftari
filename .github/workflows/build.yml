@@ -1,0 +1,49 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          X=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          echo "Using $X"
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - name: Generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build for simulator
+        run: |
+          set +e
+          xcodebuild -project Daftari.xcodeproj -scheme Daftari -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
+          STATUS=$?
+          tail -n 40 build.log
+          grep -E "^/.*:[0-9]+:[0-9]+: error:" build.log | sort -u | head -45 > errors.txt
+          echo "---- errors ($(wc -l < errors.txt)) ----"
+          cat errors.txt
+          while IFS= read -r line; do
+            f=$(echo "$line" | cut -d: -f1); l=$(echo "$line" | cut -d: -f2); m=$(echo "$line" | cut -d: -f5-)
+            echo "::error file=${f#$GITHUB_WORKSPACE/},line=$l::$m"
+          done < errors.txt
+          exit $STATUS
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log

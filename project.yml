@@ -1,0 +1,47 @@
+name: Daftari
+options:
+  bundleIdPrefix: com.gts2svg
+  developmentLanguage: ar
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  Daftari:
+    type: application
+    platform: iOS
+    sources:
+      - path: Daftari
+    scheme: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gts2svg.daftari
+        PRODUCT_NAME: Daftari
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+    entitlements:
+      path: Daftari/Daftari.entitlements
+      properties:
+        com.apple.developer.usernotifications.time-sensitive: true
+    info:
+      path: Daftari/Info.plist
+      properties:
+        CFBundleDisplayName: دفتري
+        CFBundleDevelopmentRegion: ar
+        CFBundleLocalizations: [ar]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIApplicationSupportsIndirectInputEvents: true
+        ITSAppUsesNonExemptEncryption: false
+        NSMicrophoneUsageDescription: يحتاج دفتري المايك عشان تسجّل أفكارك ويومك بصوتك.
+        NSSpeechRecognitionUsageDescription: يحوّل دفتري كلامك إلى نص داخل جوالك.
+        NSCalendarsFullAccessUsageDescription: يعرض دفتري مواعيد تقويم الآيفون مع يومك.
+        NSAlarmKitUsageDescription: يشغّل دفتري منبّهاً حقيقياً للمواعيد الضرورية، حتى لو الجوال صامت.
