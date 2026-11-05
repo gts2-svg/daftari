@@ -205,7 +205,7 @@ struct AddSheet: View {
 
     private var ladder: [(when: String, how: String, strong: Bool)] {
         let at = hasTime ? "وقت الموعد \(DF.time(combinedDate))" : "الساعة 9:00 ص"
-        let morning = "صباح اليوم \(DF.time(DF.startOfDay(Date()).addingTimeInterval(TimeInterval(Prefs.morningMinutes * 60))))"
+        let morning = "صباح يوم الموعد \(DF.time(DF.startOfDay(Date()).addingTimeInterval(TimeInterval(Prefs.morningMinutes * 60))))"
         switch importance {
         case .normal:
             return [(morning, "في رسالة الصباح", false)] + (hasTime ? [(at, "إشعار", false)] : [])

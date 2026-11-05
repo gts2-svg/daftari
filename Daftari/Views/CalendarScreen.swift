@@ -32,23 +32,28 @@ struct CalendarScreen: View {
     // MARK: header
 
     private var header: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(monthTitle).font(.system(size: 24, weight: .bold)).foregroundStyle(T.ink)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text(monthTitle)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(T.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer()
+                navButton("chevron.backward", label: "الشهر السابق", by: -1)
+                navButton("chevron.forward", label: "الشهر التالي", by: 1)
+            }
+            HStack {
                 Text(otherSpan).font(.system(size: 13)).foregroundStyle(T.muted)
+                Spacer()
+                Button("ارجع لليوم") {
+                    anchor = Date()
+                    selected = Date()
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(T.accent)
+                .frame(minHeight: 32)
             }
-            Spacer()
-            Button("اليوم") {
-                anchor = Date()
-                selected = Date()
-            }
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(T.accent)
-            .frame(height: 44)
-            .padding(.horizontal, 12)
-            .card(radius: 14)
-            navButton("chevron.backward", label: "الشهر السابق", by: -1)
-            navButton("chevron.forward", label: "الشهر التالي", by: 1)
         }
     }
 
