@@ -48,7 +48,10 @@ final class AppState: ObservableObject {
 
     /// Opens a route after the current screen has had time to close.
     func openAfterDismiss(_ r: Route) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.open(r) }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            self.open(r)
+        }
     }
 }
 

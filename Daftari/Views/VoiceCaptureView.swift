@@ -114,6 +114,13 @@ struct VoiceCaptureView: View {
         .task {
             guard !started else { return }
             started = true
+            #if DEBUG
+            if Demo.isOn {
+                speech.transcript = Demo.transcript
+                levels = (0..<28).map { i in CGFloat(0.15 + 0.7 * abs(sin(Double(i) * 0.7))) }
+                return
+            }
+            #endif
             await speech.start()
         }
         .onChange(of: speech.level) { _, value in

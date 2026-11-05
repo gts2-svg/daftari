@@ -25,7 +25,15 @@ struct RootView: View {
         .fullScreenCover(item: $state.cover) { route in
             coverContent(route).daftariEnvironment()
         }
-        .task { await Permissions.firstRun() }
+        .task {
+            #if DEBUG
+            if Demo.isOn {
+                await Demo.run()
+                return
+            }
+            #endif
+            await Permissions.firstRun()
+        }
         .onChange(of: phase) { _, newPhase in
             if newPhase == .active { Scheduler.shared.rebuildSoon() }
         }

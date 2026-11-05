@@ -285,7 +285,7 @@ struct AddSheet: View {
             if let presetKind { kind = presetKind; manualKind = true }
             if !prefill.isEmpty { applyParse() }
         }
-        DispatchQueue.main.async { loaded = true }
+        Task { @MainActor in loaded = true }
     }
 
     private func applyParse() {
