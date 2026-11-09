@@ -60,6 +60,13 @@ struct TodayView: View {
             } else {
                 ItemList(items: todayItems)
             }
+
+            let pending = entries.filter(\.isPending)
+            if !pending.isEmpty {
+                SectionTitle(title: "معلّقة", trailing: "\(pending.count)", color: T.taskInk)
+                    .padding(.top, 4)
+                ItemList(items: pending.map(DayItem.init(entry:)))
+            }
         }
     }
 

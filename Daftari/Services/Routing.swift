@@ -39,6 +39,9 @@ final class AppState: ObservableObject {
     @Published var tab = 0
     @Published var sheet: Route?
     @Published var cover: Route?
+    /// أشيائي: 0 أدويتي، 1 أغراضي، 2…4 later.
+    @Published var thingsSection = 0
+    @Published var openPack: UUID?
 
     func open(_ r: Route) {
         switch r {
@@ -113,6 +116,13 @@ enum EntryActions {
         commit()
     }
 
+    /// «مو اليوم» on an undated item: the next nudge moves a full period ahead.
+    static func notToday(_ e: Entry) {
+        let days = max(1, e.nagDays)
+        e.nagNext = DF.addDays(days, to: DF.startOfDay(Date()))
+        commit()
+    }
+
     static func delete(_ e: Entry) {
         Store.context.delete(e)
         commit()
@@ -134,7 +144,7 @@ enum EntryActions {
 @MainActor
 enum NotificationRouter {
     static func handle(action: String, category: String, uid: String?, text: String?,
-                       med: String? = nil, slot: Int? = nil, day: String? = nil) {
+                       med: String? = nil, slot: Int? = nil, day: String? = nil, pack: String? = nil) {
         let entry = uid.flatMap(UUID.init(uuidString:)).flatMap { Store.entry(uid: $0) }
         let medicine = med.flatMap(UUID.init(uuidString:)).flatMap { Store.medicine(uid: $0) }
         switch action {
@@ -152,6 +162,8 @@ enum NotificationRouter {
             }
         case "DONE":
             if let entry { EntryActions.markDone(entry) }
+        case "NOTTODAY":
+            if let entry { EntryActions.notToday(entry) }
         case "SNOOZE30":
             if let entry {
                 entry.snoozeUntil = Date().addingTimeInterval(30 * 60)
@@ -167,7 +179,13 @@ enum NotificationRouter {
             switch category {
             case "EVENING": AppState.shared.open(.evening)
             case "MORNING": AppState.shared.open(.morning)
-            case "DOSE", "MED": AppState.shared.tab = 3
+            case "DOSE", "MED":
+                AppState.shared.thingsSection = 0
+                AppState.shared.tab = 3
+            case "PACK":
+                AppState.shared.thingsSection = 1
+                AppState.shared.tab = 3
+                if let p = pack.flatMap(UUID.init(uuidString:)) { AppState.shared.openPack = p }
             default:
                 AppState.shared.tab = 0
                 if let entry {

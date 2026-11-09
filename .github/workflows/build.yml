@@ -60,7 +60,7 @@ jobs:
           APP=$(find build/Build/Products -name "Daftari.app" -maxdepth 3 | head -1)
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/shots"
-          for s in today calendar ideas meds medadd add voice evening morning settings; do
+          for s in today ideas packs pack nag morning settings; do
             xcrun simctl terminate "$UDID" com.gts2svg.daftari || true
             SIMCTL_CHILD_TZ=Asia/Riyadh xcrun simctl launch "$UDID" com.gts2svg.daftari -demo -screen "$s"
             sleep 6

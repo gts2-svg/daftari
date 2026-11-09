@@ -27,6 +27,8 @@ struct AddSheet: View {
     @State private var loaded = false
     @State private var dictationBase = ""
     @State private var confirmDelete = false
+    @State private var nagDays = 3
+    @AppStorage(Prefs.Key.nag) private var nagMinutes = 17 * 60
 
     private var editing: Entry? { editingUID.flatMap { Store.entry(uid: $0) } }
     private var trimmed: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -40,6 +42,7 @@ struct AddSheet: View {
                     kindPicker
                     if kind != .idea {
                         dateCard
+                        if !hasDate { nagCard }
                         importanceCard
                         if hasDate { ladderCard }
                     }
@@ -154,6 +157,50 @@ struct AddSheet: View {
         }
         .padding(16)
         .card(T.bg, radius: 18)
+    }
+
+    /// No date? Then it nudges every few days until «تم» (تغيير الزيت، تجديد…).
+    private var nagCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("ما له وقت محدد؟ ذكّرني فيه لين أخلّصه").font(.system(size: 13, weight: .semibold)).foregroundStyle(T.muted)
+            HStack(spacing: 6) {
+                ForEach([(0, "لا"), (1, "كل يوم"), (2, "يومين"), (3, "3 أيام"), (7, "أسبوع")], id: \.0) { opt in
+                    let on = nagDays == opt.0
+                    Button {
+                        nagDays = opt.0
+                    } label: {
+                        Text(opt.1)
+                            .font(.system(size: 14, weight: on ? .bold : .regular))
+                            .foregroundStyle(on ? T.taskInk : T.ink)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .background(on ? T.taskSoft : Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(on ? T.taskInk : T.track, lineWidth: on ? 2 : 1.5))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            Text(nagDays == 0
+                 ? "يطلع لك تحت «معلّقة» وفي رسالة الصباح بس."
+                 : "يطلع لك تحت «معلّقة» وفي رسالة الصباح، ويوصلك تذكير الساعة \(nagTimeText) \(nagEveryText) لين تضغط «تم». وفيه زر «مو اليوم».")
+                .font(.system(size: 12)).foregroundStyle(T.muted)
+        }
+        .padding(16)
+        .card(T.bg, radius: 18)
+    }
+
+    private var nagTimeText: String {
+        DF.time(DF.startOfDay(Date()).addingTimeInterval(TimeInterval(nagMinutes * 60)))
+    }
+
+    private var nagEveryText: String {
+        switch nagDays {
+        case 1: return "كل يوم"
+        case 2: return "كل يومين"
+        case 7: return "كل أسبوع"
+        default: return "كل \(nagDays) أيام"
+        }
     }
 
     private var importanceCard: some View {
@@ -279,6 +326,7 @@ struct AddSheet: View {
             kind = e.kind
             importance = e.importance
             lead = e.alarmLeadMinutes
+            nagDays = e.date == nil ? e.nagDays : 3
             if let d = e.date {
                 hasDate = true; day = d; hasTime = e.hasTime; time = d
             }
@@ -351,6 +399,15 @@ struct AddSheet: View {
         entry.importance = kind == .idea ? .normal : importance
         entry.alarmLeadMinutes = lead
         entry.snoozeUntil = nil
+        if date == nil && kind != .idea {
+            if entry.nagDays != nagDays || entry.nagNext == nil {
+                entry.nagNext = DF.addDays(1, to: DF.startOfDay(Date()))
+            }
+            entry.nagDays = nagDays
+        } else {
+            entry.nagDays = 0
+            entry.nagNext = nil
+        }
         if let cu = convertUID, let src = Store.entry(uid: cu), src.uid != entry.uid {
             ctx.delete(src)
         }

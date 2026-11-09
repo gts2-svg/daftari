@@ -28,6 +28,12 @@ enum Demo {
         case "evening": app.open(.evening)
         case "morning": app.open(.morning)
         case "settings": app.open(.settings)
+        case "packs": app.thingsSection = 1; app.tab = 3
+        case "pack":
+            app.thingsSection = 1; app.tab = 3
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            app.openPack = Store.allPackLists().first?.uid
+        case "nag": app.open(.add(prefill: "تغيير زيت السيارة", date: nil, kind: .task))
         default: app.tab = 0
         }
     }
@@ -80,6 +86,26 @@ enum Demo {
         m2.setTaken(key: Medicine.key(now, 9 * 60), true)
         ctx.insert(m1)
         ctx.insert(m2)
+
+        let oil = Entry(title: "تغيير زيت السيارة", kind: .task)
+        oil.nagDays = 3
+        oil.nagNext = DF.addDays(1, to: today)
+        oil.createdAt = DF.addDays(-4, to: now)
+        ctx.insert(oil)
+        let gift = Entry(title: "أشتري هدية لأبو إبراهيم", kind: .task)
+        gift.nagDays = 7
+        ctx.insert(gift)
+
+        let trip = PackList(name: "البر")
+        trip.add("عزبة الطبخ أبو راجح والوجار\nعزبة القهوة والشاهي\nأكياس النوم\nشاخوف\nعلاجك عندي\nكشاف\nلمبة\nشاحني\nملابسي (ثيرمل، قبوع، قفاز، شراب، فروة)\nآيباد")
+        trip.toggle(trip.items[0].id)
+        trip.toggle(trip.items[2].id)
+        trip.toggle(trip.items[5].id)
+        trip.tripDate = DF.addDays(3, to: today)
+        ctx.insert(trip)
+        let travel = PackList(name: "السفر")
+        travel.add("الجواز\nالشاحن\nأدويتي")
+        ctx.insert(travel)
         try? ctx.save()
     }
 }

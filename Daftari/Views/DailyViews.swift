@@ -175,6 +175,41 @@ struct MorningBriefView: View {
                     .card(radius: 22)
                 }
 
+                let pending = entries.filter(\.isPending)
+                if !pending.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(verbatim: "معلّقة عندك · \(pending.count)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(T.taskInk)
+                            .padding(.vertical, 10)
+                        ForEach(pending.prefix(5), id: \.uid) { e in
+                            HStack(spacing: 10) {
+                                Button {
+                                    EntryActions.markDone(e)
+                                } label: {
+                                    Image(systemName: "circle")
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(Color(hex: 0xC9A15A))
+                                        .frame(width: 40, height: 40)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("علّم «\(e.title)» كمنجز")
+                                Text(e.title).font(.system(size: 15))
+                                Spacer()
+                                if e.isNagging {
+                                    Button("مو اليوم") { EntryActions.notToday(e) }
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color(hex: 0x6B5A40))
+                                        .frame(minHeight: 40)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+                    .card(radius: 22)
+                }
+
                 if !overdue.isEmpty {
                     HStack(spacing: 10) {
                         Image(systemName: "clock").foregroundStyle(T.urgentInk)

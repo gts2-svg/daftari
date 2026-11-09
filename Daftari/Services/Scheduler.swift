@@ -32,6 +32,8 @@ final class Scheduler {
 
         var itemRequests: [(Date, UNNotificationRequest)] = []
         for e in open { itemRequests += requests(for: e, now: now) }
+        itemRequests += nagRequests(entries: entries, now: now)
+        itemRequests += packRequests(Store.allPackLists(), now: now)
         itemRequests.sort { $0.0 < $1.0 }
 
         let daily = dailyRequests(entries: entries, now: now)
@@ -143,6 +145,56 @@ final class Scheduler {
         return out
     }
 
+    // MARK: - undated items («معلّقة»)
+
+    /// The next three nudges for each undated item, at the nudge time, every N days until «تم».
+    private func nagRequests(entries: [Entry], now: Date) -> [(Date, UNNotificationRequest)] {
+        var out: [(Date, UNNotificationRequest)] = []
+        for e in entries where e.isNagging {
+            guard let first = e.nextNag(after: now) else { continue }
+            let age = DF.daysBetween(e.createdAt, now)
+            let since = age >= 2 ? "معلّقة من \(age == 2 ? "يومين" : DF.daysText(age)) · " : ""
+            for k in 0..<3 {
+                let at = DF.addDays(k * e.nagDays, to: first)
+                out.append((at, NotificationFactory.request(
+                    id: "nag-\(e.uid.uuidString)-\(k)", at: at, title: e.title,
+                    body: "\(since)اضغط «تم» إذا خلصتها، أو «مو اليوم»",
+                    sensitive: e.importance != .normal, category: "NAG", uid: e.uid.uuidString)))
+            }
+        }
+        return out
+    }
+
+    // MARK: - packing lists («أغراضي»)
+
+    /// The night before the trip (8:00 pm) and the trip morning, only while something is unticked.
+    private func packRequests(_ lists: [PackList], now: Date) -> [(Date, UNNotificationRequest)] {
+        var out: [(Date, UNNotificationRequest)] = []
+        for l in lists {
+            guard let trip = l.tripDate else { continue }
+            let left = l.remaining
+            guard !left.isEmpty else { continue }
+            let day = DF.startOfDay(trip)
+            let names = left.prefix(4).map(\.text).joined(separator: "، ")
+            let more = left.count > 4 ? "…" : ""
+            let info: [String: Any] = ["pack": l.uid.uuidString]
+            if let eve = DF.greg.date(bySettingHour: 20, minute: 0, second: 0, of: DF.addDays(-1, to: day)), eve > now {
+                out.append((eve, NotificationFactory.request(
+                    id: "pack-\(l.uid.uuidString)-eve", at: eve, title: "بكرة طلعتك: \(l.displayName)",
+                    body: "باقي \(left.count) من \(l.total): \(names)\(more)",
+                    sensitive: true, category: "PACK", uid: nil, extra: info)))
+            }
+            let morning = day.addingTimeInterval(TimeInterval(Prefs.morningMinutes * 60))
+            if morning > now {
+                out.append((morning, NotificationFactory.request(
+                    id: "pack-\(l.uid.uuidString)-day", at: morning, title: "اليوم طلعتك: \(l.displayName)",
+                    body: "لا تنسى: \(names)\(more)",
+                    sensitive: true, category: "PACK", uid: nil, extra: info)))
+            }
+        }
+        return out
+    }
+
     // MARK: - morning and evening
 
     private func dailyRequests(entries: [Entry], now: Date) -> [(Date, UNNotificationRequest)] {
@@ -184,7 +236,8 @@ final class Scheduler {
         let items = Agenda.items(on: day, entries: entries, includeClosed: false)
         let overdue = DF.daysBetween(Date(), day) == 0 ? Agenda.overdue(entries: entries).count : 0
         let doses = Store.allMedicines().filter { $0.isActive(on: day) }.reduce(0) { $0 + $1.slots.count }
-        let medsTail = doses > 0 ? " · أدويتك: \(doses) جرعات" : ""
+        let pending = entries.filter(\.isPending).count
+        let medsTail = (doses > 0 ? " · أدويتك: \(doses) جرعات" : "") + (pending > 0 ? " · معلّقة: \(pending)" : "")
         guard !items.isEmpty else {
             return (overdue > 0 ? "يومك فاضي من المواعيد، وعندك \(overdue) متأخرة." : "يومك فاضي من المواعيد.") + medsTail
         }
@@ -235,7 +288,10 @@ enum NotificationFactory {
         let snooze15 = UNNotificationAction(identifier: "SNOOZE15", title: "بعد 15 دقيقة", options: [])
         let dose = UNNotificationCategory(identifier: "DOSE", actions: [taken, snooze15], intentIdentifiers: [], options: [])
         let med = UNNotificationCategory(identifier: "MED", actions: [], intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([item, evening, morning, dose, med])
+        let notToday = UNNotificationAction(identifier: "NOTTODAY", title: "مو اليوم", options: [])
+        let nag = UNNotificationCategory(identifier: "NAG", actions: [done, notToday], intentIdentifiers: [], options: [])
+        let pack = UNNotificationCategory(identifier: "PACK", actions: [], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([item, evening, morning, dose, med, nag, pack])
     }
 
     static func sendTest(sensitive: Bool) async {

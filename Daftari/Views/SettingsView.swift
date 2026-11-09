@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(Prefs.Key.morning) private var morning = 8 * 60
     @AppStorage(Prefs.Key.evening) private var evening = 20 * 60
+    @AppStorage(Prefs.Key.nag) private var nagMinutes = 17 * 60
     @AppStorage(Prefs.Key.hijriPrimary) private var hijriPrimary = true
     @AppStorage(Prefs.Key.useSystemCalendar) private var useSystemCalendar = true
     @AppStorage(Prefs.Key.defaultLead) private var defaultLead = 60
@@ -29,10 +30,11 @@ struct SettingsView: View {
                 Section {
                     DatePicker("رسالة الصباح", selection: timeBinding($morning), displayedComponents: .hourAndMinute)
                     DatePicker("وش صار اليوم؟", selection: timeBinding($evening), displayedComponents: .hourAndMinute)
+                    DatePicker("تذكير المعلّقة", selection: timeBinding($nagMinutes), displayedComponents: .hourAndMinute)
                 } header: {
                     Text("الأوقات اليومية")
                 } footer: {
-                    Text("إذا ما سجّلت يومك، يذكّرك مرة ثانية بعد ساعة ونص.")
+                    Text("إذا ما سجّلت يومك، يذكّرك مرة ثانية بعد ساعة ونص. «المعلّقة» هي المهام اللي ما لها تاريخ.")
                 }
 
                 Section("العرض") {

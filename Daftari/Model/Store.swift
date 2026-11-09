@@ -5,7 +5,7 @@ import SwiftData
 enum Store {
     static let container: ModelContainer = {
         do {
-            return try ModelContainer(for: Entry.self, Medicine.self)
+            return try ModelContainer(for: Entry.self, Medicine.self, PackList.self)
         } catch {
             fatalError("تعذر فتح قاعدة البيانات: \(error)")
         }
@@ -29,6 +29,14 @@ enum Store {
         allMedicines().first { $0.uid == uid }
     }
 
+    static func allPackLists() -> [PackList] {
+        (try? context.fetch(FetchDescriptor<PackList>())) ?? []
+    }
+
+    static func packList(uid: UUID) -> PackList? {
+        allPackLists().first { $0.uid == uid }
+    }
+
     static func save() {
         try? context.save()
     }
@@ -44,6 +52,7 @@ enum Prefs {
         static let lastEveningLog = "lastEveningLog"
         static let askedPermissions = "askedPermissions"
         static let importReminders = "importReminders"
+        static let nag = "nagMinutes"
     }
 
     private static var d: UserDefaults { .standard }
@@ -52,6 +61,7 @@ enum Prefs {
     static var eveningMinutes: Int { d.object(forKey: Key.evening) as? Int ?? 20 * 60 }
     static var hijriPrimary: Bool { d.object(forKey: Key.hijriPrimary) as? Bool ?? true }
     static var useSystemCalendar: Bool { d.object(forKey: Key.useSystemCalendar) as? Bool ?? true }
+    static var nagMinutes: Int { d.object(forKey: Key.nag) as? Int ?? 17 * 60 }
     static var importReminders: Bool { d.bool(forKey: Key.importReminders) }
     static var defaultLead: Int { d.object(forKey: Key.defaultLead) as? Int ?? 60 }
 

@@ -55,6 +55,10 @@ final class Entry {
     var snoozeUntil: Date? = nil
     /// The iPhone Reminders item this came from (when imported).
     var externalID: String? = nil
+    /// Undated item: remind every N days until «تم» (0 = off).
+    var nagDays: Int = 0
+    /// The day of the next nudge (time comes from the settings).
+    var nagNext: Date? = nil
 
     init(title: String, kind: EntryKind, date: Date? = nil, hasTime: Bool = false,
          importance: Importance = .normal, alarmLeadMinutes: Int = 60) {
@@ -86,5 +90,34 @@ final class Entry {
         guard let date else { return nil }
         if hasTime { return date }
         return DF.greg.date(bySettingHour: 9, minute: 0, second: 0, of: date)
+    }
+
+    /// An open item with no date that keeps nudging every few days.
+    var isNagging: Bool { isOpen && isScheduledKind && date == nil && nagDays > 0 }
+
+    /// Every open item with no date (shown under «معلّقة»).
+    var isPending: Bool { isOpen && isScheduledKind && date == nil }
+
+    /// The next nudge after `now`, at the nudge time from the settings.
+    func nextNag(after now: Date) -> Date? {
+        guard isNagging else { return nil }
+        let startDay = DF.startOfDay(nagNext ?? DF.addDays(1, to: createdAt))
+        var next = startDay.addingTimeInterval(TimeInterval(Prefs.nagMinutes * 60))
+        var guardCount = 0
+        while next <= now && guardCount < 2000 {
+            next = DF.addDays(nagDays, to: next)
+            guardCount += 1
+        }
+        return next
+    }
+
+    var nagLabel: String {
+        switch nagDays {
+        case 0: return "بدون تاريخ"
+        case 1: return "يذكّرك كل يوم"
+        case 2: return "يذكّرك كل يومين"
+        case 7: return "يذكّرك كل أسبوع"
+        default: return "يذكّرك كل \(nagDays) أيام"
+        }
     }
 }

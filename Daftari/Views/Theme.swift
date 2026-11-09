@@ -148,6 +148,9 @@ struct ItemRow: View {
         }
         .contextMenu {
             if let e = item.entry {
+                if e.isNagging {
+                    Button("مو اليوم", systemImage: "moon.zzz") { EntryActions.notToday(e) }
+                }
                 Button("لبكرة", systemImage: "arrow.uturn.backward") { EntryActions.postpone(e) }
                 Button("تعديل", systemImage: "pencil") { AppState.shared.open(.edit(e.uid)) }
                 Button("حذف", systemImage: "trash", role: .destructive) { EntryActions.delete(e) }
@@ -160,6 +163,9 @@ struct ItemRow: View {
         if let d = item.date {
             if showDay { parts.append(DF.relativeDay(d)) }
             parts.append(item.hasTime ? DF.time(d) : (showDay ? "" : "طول اليوم"))
+        }
+        if item.date == nil, let e = item.entry, e.isScheduledKind {
+            parts.append(e.nagLabel)
         }
         if item.isSystem { parts.append("تقويم الآيفون") }
         return parts.filter { !$0.isEmpty }.joined(separator: " · ")

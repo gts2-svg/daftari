@@ -94,7 +94,8 @@ struct DoseDot: View {
 
 struct ThingsView: View {
     @Query(sort: \Medicine.createdAt) private var meds: [Medicine]
-    @State private var section = 0
+    @ObservedObject private var app = AppState.shared
+    private var section: Int { app.thingsSection }
 
     var body: some View {
         NavigationStack {
@@ -104,9 +105,13 @@ struct ThingsView: View {
                         HStack {
                             Text("أشيائي").font(.system(size: 28, weight: .bold)).foregroundStyle(T.ink)
                             Spacer()
-                            if section == 0 {
+                            if section == 0 || section == 1 {
                                 Button {
-                                    AppState.shared.open(.medicine(nil))
+                                    if section == 0 {
+                                        AppState.shared.open(.medicine(nil))
+                                    } else {
+                                        app.openPack = PackActions.create()
+                                    }
                                 } label: {
                                     Image(systemName: "plus")
                                         .font(.system(size: 18, weight: .bold))
@@ -114,19 +119,22 @@ struct ThingsView: View {
                                         .frame(width: 44, height: 44)
                                         .background(T.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                                 }
-                                .accessibilityLabel("إضافة دواء")
+                                .accessibilityLabel(section == 0 ? "إضافة دواء" : "قائمة أغراض جديدة")
                             }
                         }
-                        Picker("القسم", selection: $section) {
+                        Picker("القسم", selection: $app.thingsSection) {
                             Text("أدويتي").tag(0)
-                            Text("تجديدات").tag(1)
-                            Text("ضمانات").tag(2)
-                            Text("السيارة").tag(3)
+                            Text("أغراضي").tag(1)
+                            Text("تجديدات").tag(2)
+                            Text("ضمانات").tag(3)
+                            Text("السيارة").tag(4)
                         }
                         .pickerStyle(.segmented)
 
                         if section == 0 {
                             medsSection(now: context.date)
+                        } else if section == 1 {
+                            PackListsSection(now: context.date) { app.openPack = $0 }
                         } else {
                             comingSoon
                         }
@@ -138,6 +146,9 @@ struct ThingsView: View {
             }
             .background(T.bg.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(item: $app.openPack) { uid in
+                PackListDetail(uid: uid)
+            }
         }
     }
 
