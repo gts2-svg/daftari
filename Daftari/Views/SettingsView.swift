@@ -88,7 +88,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent("الإصدار", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
+                    LabeledContent("الإصدار", value: Self.versionText)
                 }
             }
             .navigationTitle("الإعدادات")
@@ -102,6 +102,14 @@ struct SettingsView: View {
             .onChange(of: hijriPrimary) { _, _ in Scheduler.shared.rebuildSoon() }
             .onChange(of: useSystemCalendar) { _, _ in Scheduler.shared.rebuildSoon() }
         }
+    }
+
+    /// «0.1.0 · نسخة 4» — the second number goes up with every build.
+    static var versionText: String {
+        let info = Bundle.main.infoDictionary ?? [:]
+        let v = info["CFBundleShortVersionString"] as? String ?? ""
+        let b = info["CFBundleVersion"] as? String ?? ""
+        return b.isEmpty ? v : "\(v) · نسخة \(b)"
     }
 
     private func timeBinding(_ minutes: Binding<Int>) -> Binding<Date> {
