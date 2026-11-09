@@ -63,10 +63,12 @@ jobs:
           for s in today ideas packs pack nag morning settings; do
             xcrun simctl terminate "$UDID" com.gts2svg.daftari || true
             SIMCTL_CHILD_TZ=Asia/Riyadh xcrun simctl launch "$UDID" com.gts2svg.daftari -demo -screen "$s"
-            sleep 6
+            sleep 14
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$s.png"
+            if ! xcrun simctl spawn "$UDID" launchctl list | grep -q daftari; then echo "::warning::$s — app not running (crash?)"; fi
           done
           ls -la "$RUNNER_TEMP/shots"
+          find ~/Library/Logs/DiagnosticReports -name "Daftari*" -newer build.log -exec head -80 {} \; 2>/dev/null | head -120 || true
 
       - name: Publish screenshots to the screens branch
         run: |
