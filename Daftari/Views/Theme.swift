@@ -180,3 +180,27 @@ struct ItemList: View {
         .card()
     }
 }
+
+/// A «تم» button above the keyboard (multi-line fields have no return-to-close),
+/// and dragging the page closes the keyboard too.
+struct KeyboardDone: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .scrollDismissesKeyboard(.immediately)
+            .scrollBounceBehavior(.always)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("تم") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                        to: nil, from: nil, for: nil)
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                }
+            }
+    }
+}
+
+extension View {
+    func keyboardDone() -> some View { modifier(KeyboardDone()) }
+}

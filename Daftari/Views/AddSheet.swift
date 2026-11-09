@@ -60,7 +60,7 @@ struct AddSheet: View {
                 }
                 .padding(20)
             }
-            .scrollDismissesKeyboard(.interactively)
+            .keyboardDone()
             .background(Color.white)
             .safeAreaInset(edge: .bottom) { saveBar }
             .navigationTitle(editing == nil ? "إضافة" : "تعديل")

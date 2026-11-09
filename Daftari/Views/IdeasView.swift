@@ -85,7 +85,7 @@ struct IdeasView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 40)
             }
-            .scrollDismissesKeyboard(.interactively)
+            .keyboardDone()
             .background(T.bg.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
         }

@@ -479,7 +479,7 @@ struct MedicineSheet: View {
                 }
                 .padding(20)
             }
-            .scrollDismissesKeyboard(.interactively)
+            .keyboardDone()
             .background(Color.white)
             .safeAreaInset(edge: .bottom) {
                 Button(action: save) {

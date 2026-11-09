@@ -83,7 +83,7 @@ struct EveningCheckView: View {
         }
         .foregroundStyle(T.nightText)
         .background(T.nightBg.ignoresSafeArea())
-        .scrollDismissesKeyboard(.interactively)
+        .keyboardDone()
         .fullScreenCover(isPresented: $showVoice) {
             VoiceCaptureView(mode: .journal).daftariEnvironment()
         }
