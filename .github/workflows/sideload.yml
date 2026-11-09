@@ -8,13 +8,17 @@ on:
     branches: [main]
     paths-ignore: ["README.md"]
   workflow_dispatch:
+    inputs:
+      runner:
+        description: "macOS runner (macos-26 or macos-15)"
+        default: macos-26
 
 permissions:
   contents: write
 
 jobs:
   ipa:
-    runs-on: macos-26
+    runs-on: ${{ github.event.inputs.runner || 'macos-26' }}
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
