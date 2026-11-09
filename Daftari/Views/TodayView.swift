@@ -265,7 +265,9 @@ struct TasksListView: View {
                 }
             }
             .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(T.bg.ignoresSafeArea())
         .navigationTitle("المهام")
         .navigationBarTitleDisplayMode(.large)
