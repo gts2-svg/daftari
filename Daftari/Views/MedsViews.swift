@@ -337,6 +337,8 @@ struct MedicineSheet: View {
     @State private var slots: [Int] = []
     @State private var newTime = DF.greg.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var addingTime = false
+    @State private var timesPerDay = 0     // 0 = أوقات يدوية
+    @State private var firstDose = DF.greg.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var doseNote = ""
     @State private var course = 0          // 0 مستمر، 7 أسبوع، 14 أسبوعان، -1 لين تاريخ
     @State private var courseEnd = DF.addDays(14, to: Date())
@@ -388,15 +390,32 @@ struct MedicineSheet: View {
 
                     field("أوقات الجرعات") {
                         HStack(spacing: 8) {
-                            preset("مرة", [9 * 60])
-                            preset("مرتين", [9 * 60, 21 * 60])
-                            preset("3 مرات", [8 * 60, 14 * 60, 22 * 60])
-                            preset("4 مرات", [8 * 60, 12 * 60, 16 * 60, 22 * 60])
+                            countButton("مرة", 1)
+                            countButton("مرتين", 2)
+                            countButton("3 مرات", 3)
+                            countButton("4 مرات", 4)
+                        }
+                        if timesPerDay > 0 {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("أول جرعة").font(.system(size: 15, weight: .semibold))
+                                    if timesPerDay > 1 {
+                                        Text(verbatim: "والباقي كل \(24 / timesPerDay) ساعات تلقائياً")
+                                            .font(.system(size: 12)).foregroundStyle(T.muted)
+                                    }
+                                }
+                                Spacer()
+                                DatePicker("أول جرعة", selection: $firstDose, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                            }
+                            .padding(12)
+                            .background(MedColors.soft.opacity(0.5), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
                         FlowLayout(spacing: 8) {
                             ForEach(slots.sorted(), id: \.self) { slot in
                                 Button {
                                     slots.removeAll { $0 == slot }
+                                    timesPerDay = 0
                                 } label: {
                                     HStack(spacing: 6) {
                                         Text(Medicine.slotText(slot)).font(.system(size: 14, weight: .bold))
@@ -430,6 +449,7 @@ struct MedicineSheet: View {
                                     let c = DF.greg.dateComponents([.hour, .minute], from: newTime)
                                     let m = (c.hour ?? 0) * 60 + (c.minute ?? 0)
                                     if !slots.contains(m) { slots.append(m) }
+                                    timesPerDay = 0
                                     addingTime = false
                                 }
                                 .font(.system(size: 15, weight: .bold))
@@ -496,6 +516,7 @@ struct MedicineSheet: View {
             }
         }
         .onAppear(perform: load)
+        .onChange(of: firstDose) { _, _ in fillEvenly() }
     }
 
     private func field<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -519,8 +540,20 @@ struct MedicineSheet: View {
         .accessibilityAddTraits(on ? .isSelected : [])
     }
 
-    private func preset(_ title: String, _ value: [Int]) -> some View {
-        choice(title, on: slots.sorted() == value.sorted()) { slots = value }
+    /// «4 مرات» + أول جرعة 4 م → 4 م، 10 م، 4 ص، 10 ص (every 24/n hours).
+    private func countButton(_ title: String, _ n: Int) -> some View {
+        choice(title, on: timesPerDay == n) {
+            timesPerDay = n
+            fillEvenly()
+        }
+    }
+
+    private func fillEvenly() {
+        guard timesPerDay > 0 else { return }
+        let c = DF.greg.dateComponents([.hour, .minute], from: firstDose)
+        let start = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+        let step = 24 * 60 / timesPerDay
+        slots = (0..<timesPerDay).map { (start + $0 * step) % (24 * 60) }
     }
 
     private func load() {
@@ -533,6 +566,15 @@ struct MedicineSheet: View {
         opened = m.openedAt != nil
         openedDay = m.openedAt ?? Date()
         slots = m.slots
+        let sorted = m.slots.sorted()
+        if !sorted.isEmpty, (24 * 60) % sorted.count == 0 {
+            let step = 24 * 60 / sorted.count
+            let even = zip(sorted, sorted.dropFirst()).allSatisfy { $1 - $0 == step }
+            if even {
+                timesPerDay = sorted.count
+                firstDose = DF.greg.date(bySettingHour: sorted[0] / 60, minute: sorted[0] % 60, second: 0, of: Date()) ?? firstDose
+            }
+        }
         doseNote = m.doseNote
         if let end = m.courseEnd {
             course = -1

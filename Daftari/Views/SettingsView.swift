@@ -16,6 +16,8 @@ struct SettingsView: View {
     @State private var notifOK = false
     @State private var notifDenied = false
     @State private var timeSensitiveOK = false
+    @State private var timeSensitiveSupported = true
+    @State private var remindersOK = false
     @State private var alarmOK = false
     @State private var calendarOK = false
     @State private var micOK = false
@@ -84,7 +86,7 @@ struct SettingsView: View {
 
                 Section {
                     permissionRow("الإشعارات", ok: notifOK) { await askNotifications() }
-                    if notifOK {
+                    if notifOK && timeSensitiveSupported {
                         permissionRow("التنبيهات المهمة تتجاوز التركيز", ok: timeSensitiveOK) { openSettings() }
                     }
                     permissionRow("المنبّه الحقيقي", ok: alarmOK) {
@@ -93,6 +95,10 @@ struct SettingsView: View {
                     permissionRow("تقويم الآيفون", ok: calendarOK) {
                         if CalendarService.shared.canAsk { _ = await CalendarService.shared.request() } else { openSettings() }
                         Scheduler.shared.rebuildSoon()
+                    }
+                    permissionRow("تذكيرات الآيفون", ok: remindersOK) {
+                        importReminders = true
+                        await syncReminders()
                     }
                     permissionRow("المايك والتعرّف على الكلام", ok: micOK) {
                         _ = await requestSpeechPermissions()
@@ -201,6 +207,8 @@ struct SettingsView: View {
         notifOK = s.authorizationStatus == .authorized
         notifDenied = s.authorizationStatus == .denied
         timeSensitiveOK = s.timeSensitiveSetting == .enabled
+        timeSensitiveSupported = s.timeSensitiveSetting != .notSupported
+        remindersOK = ReminderService.shared.authorized
         alarmOK = AlarmService.isAuthorized
         calendarOK = CalendarService.shared.authorized
         micOK = SFSpeechRecognizer.authorizationStatus() == .authorized

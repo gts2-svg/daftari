@@ -46,6 +46,17 @@ struct AddSheet: View {
                     if let err = speech.errorText {
                         Text(err).font(.system(size: 13)).foregroundStyle(T.urgentInk)
                     }
+                    if editing != nil {
+                        Button(role: .destructive) { confirmDelete = true } label: {
+                            Label("احذفه نهائياً", systemImage: "trash")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(T.urgentInk)
+                                .frame(maxWidth: .infinity, minHeight: 50)
+                                .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
+                    }
                 }
                 .padding(20)
             }
