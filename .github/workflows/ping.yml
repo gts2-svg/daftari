@@ -1,0 +1,12 @@
+name: ping
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        default: ubuntu-latest
+jobs:
+  ping:
+    runs-on: ${{ github.event.inputs.runner }}
+    timeout-minutes: 5
+    steps:
+      - run: uname -a; sw_vers 2>/dev/null || true; ls /Applications 2>/dev/null | grep -i xcode || true
