@@ -45,6 +45,12 @@ jobs:
         run: |
           mkdir -p ipa/Payload
           cp -R build/Build/Products/Release-iphoneos/Daftari.app ipa/Payload/
+          # Apple's App ID name must be Latin letters; SideStore takes it from
+          # the Info.plist name. The Arabic name still shows on the home screen
+          # from ar.lproj/InfoPlist.strings.
+          plutil -replace CFBundleDisplayName -string Daftari ipa/Payload/Daftari.app/Info.plist
+          plutil -replace CFBundleName -string Daftari ipa/Payload/Daftari.app/Info.plist
+          ls ipa/Payload/Daftari.app/ar.lproj
           cd ipa && zip -qry ../Daftari.ipa Payload && cd ..
           ls -la Daftari.ipa
 
