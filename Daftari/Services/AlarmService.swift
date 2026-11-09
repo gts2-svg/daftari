@@ -35,10 +35,18 @@ enum AlarmService {
         let horizon = DF.addDays(30, to: now)
         for e in entries where e.isScheduledKind && e.isOpen && e.importance == .urgent {
             guard let anchor = e.anchorDate else { continue }
-            let fire = anchor.addingTimeInterval(TimeInterval(-60 * e.alarmLeadMinutes))
-            guard fire > now, fire < horizon else { continue }
             let when = e.hasTime ? DF.time(anchor) : DF.relativeDay(anchor, now: now)
-            await schedule(id: e.uid, at: fire, title: "\(e.title) · \(when)")
+            // One alarm ahead of time (the chosen lead) and one at the time itself,
+            // so a «ضروري» item set for soon still rings even when the lead has passed.
+            var fires: [(Date, String)] = []
+            if e.alarmLeadMinutes > 0 {
+                let early = anchor.addingTimeInterval(TimeInterval(-60 * e.alarmLeadMinutes))
+                fires.append((early, "\(e.title) · \(when)"))
+            }
+            fires.append((anchor, "\(e.title) · الآن"))
+            for (fire, title) in fires where fire > now && fire < horizon {
+                await schedule(id: UUID(), at: fire, title: title)
+            }
         }
     }
 
