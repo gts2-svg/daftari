@@ -59,7 +59,7 @@ struct CalendarScreen: View {
 
     private func navButton(_ icon: String, label: String, by step: Int) -> some View {
         Button {
-            if let d = cal.date(byAdding: .month, value: step, to: anchor) { anchor = d }
+            moveMonth(by: step)
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .semibold))
@@ -68,6 +68,33 @@ struct CalendarScreen: View {
                 .card(radius: 14)
         }
         .accessibilityLabel(label)
+    }
+
+    /// Moves the shown month and takes the chosen day along with it: today when
+    /// the new month holds today, otherwise the month's first day — so the day
+    /// details under the grid never belong to a month that is off screen.
+    private func moveMonth(by step: Int) {
+        guard let d = cal.date(byAdding: .month, value: step, to: anchor) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            anchor = d
+            if cal.isDate(Date(), equalTo: d, toGranularity: .month) {
+                selected = Date()
+            } else if let start = cal.dateInterval(of: .month, for: d)?.start {
+                selected = start
+            }
+        }
+    }
+
+    /// Horizontal swipe on the month card. Measured in screen space so the
+    /// right-to-left layout can't flip it: the «التالي» arrow sits on the left,
+    /// so the next month comes in from the left — finger moves right → next.
+    private var swipe: some Gesture {
+        DragGesture(minimumDistance: 20, coordinateSpace: .global)
+            .onEnded { v in
+                let dx = v.translation.width, dy = v.translation.height
+                guard abs(dx) > 50, abs(dx) > abs(dy) * 1.5 else { return }
+                moveMonth(by: dx > 0 ? 1 : -1)
+            }
     }
 
     private var monthTitle: String {
@@ -124,6 +151,8 @@ struct CalendarScreen: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 12)
         .card(radius: 22)
+        .contentShape(Rectangle())
+        .simultaneousGesture(swipe)
     }
 
     private func dayCell(_ day: Date, mark: Importance??) -> some View {
