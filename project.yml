@@ -44,4 +44,5 @@ targets:
         NSMicrophoneUsageDescription: يحتاج دفتري المايك عشان تسجّل أفكارك ويومك بصوتك.
         NSSpeechRecognitionUsageDescription: يحوّل دفتري كلامك إلى نص داخل جوالك.
         NSCalendarsFullAccessUsageDescription: يعرض دفتري مواعيد تقويم الآيفون مع يومك.
+        NSRemindersFullAccessUsageDescription: يجلب دفتري تذكيراتك من تطبيق التذكيرات، ولما تخلّصها هنا يعلّمها «تم» هناك.
         NSAlarmKitUsageDescription: يشغّل دفتري منبّهاً حقيقياً للمواعيد الضرورية، حتى لو الجوال صامت.

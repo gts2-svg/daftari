@@ -86,7 +86,7 @@ final class Scheduler {
         }
 
         if let snooze = e.snoozeUntil, snooze > now {
-            add("snooze", snooze, e.title, "ذكّرتك بعد 30 دقيقة كما طلبت", sensitive: e.importance != .normal)
+            add("snooze", snooze, e.title, "ذكّرتك مثل ما طلبت", sensitive: e.importance != .normal)
         }
         return out
     }

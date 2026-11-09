@@ -33,9 +33,15 @@ struct RootView: View {
             }
             #endif
             await Permissions.firstRun()
+            if await ReminderService.shared.sync() > 0 { Scheduler.shared.rebuildSoon() }
         }
         .onChange(of: phase) { _, newPhase in
-            if newPhase == .active { Scheduler.shared.rebuildSoon() }
+            if newPhase == .active {
+                Task {
+                    await ReminderService.shared.sync()
+                    Scheduler.shared.rebuildSoon()
+                }
+            }
         }
     }
 
@@ -56,15 +62,20 @@ struct RootView: View {
             SettingsView()
         case .medicine(let uid):
             MedicineSheet(editingUID: uid)
-        case .voice:
+        case .voice, .urgent:
             EmptyView()
         }
     }
 
     @ViewBuilder
     private func coverContent(_ route: Route) -> some View {
-        if case .voice(let mode) = route {
+        switch route {
+        case .voice(let mode):
             VoiceCaptureView(mode: mode)
+        case .urgent(let uid):
+            UrgentView(uid: uid)
+        default:
+            EmptyView()
         }
     }
 }

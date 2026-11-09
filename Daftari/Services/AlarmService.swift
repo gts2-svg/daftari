@@ -44,22 +44,36 @@ enum AlarmService {
                 fires.append((early, "\(e.title) · \(when)"))
             }
             fires.append((anchor, "\(e.title) · الآن"))
+            if let snooze = e.snoozeUntil {
+                fires.append((snooze, "\(e.title) · \(when)"))
+            }
             for (fire, title) in fires where fire > now && fire < horizon {
-                await schedule(id: UUID(), at: fire, title: title)
+                await schedule(id: UUID(), at: fire, title: title, entry: e.uid)
             }
         }
     }
 
-    static func schedule(id: UUID, at date: Date, title: String) async {
-        let stop = AlarmButton(text: "تم، شفته", textColor: .white, systemImageName: "checkmark.circle.fill")
-        let alert = AlarmPresentation.Alert(title: LocalizedStringResource(stringLiteral: title), stopButton: stop)
+    /// The alarm screen is drawn by iOS: we set the title, the stop button and one extra button.
+    /// Stopping opens دفتري on the «ضروري» screen; «أجّلني 10 د» rings again in ten minutes.
+    static func schedule(id: UUID, at date: Date, title: String, entry: UUID?) async {
+        let stop = AlarmButton(text: "إيقاف وافتح", textColor: .white, systemImageName: "stop.circle.fill")
+        let later = AlarmButton(text: "أجّلني 10 د", textColor: .white, systemImageName: "zzz")
+        let alert = AlarmPresentation.Alert(
+            title: LocalizedStringResource(stringLiteral: title),
+            stopButton: stop,
+            secondaryButton: later,
+            secondaryButtonBehavior: .custom
+        )
         let attributes = AlarmAttributes<DaftariAlarmData>(
             presentation: AlarmPresentation(alert: alert),
             tintColor: T.urgentInk
         )
+        let key = entry?.uuidString ?? ""
         let configuration = AlarmManager.AlarmConfiguration<DaftariAlarmData>.alarm(
             schedule: .fixed(date),
-            attributes: attributes
+            attributes: attributes,
+            stopIntent: OpenUrgentIntent(entryID: key),
+            secondaryIntent: SnoozeUrgentIntent(entryID: key, title: title)
         )
         _ = try? await AlarmManager.shared.schedule(id: id, configuration: configuration)
     }
@@ -67,7 +81,7 @@ enum AlarmService {
     static func scheduleTest() async -> Bool {
         if canAsk { await requestAuthorization() }
         guard isAuthorized else { return false }
-        await schedule(id: UUID(), at: Date().addingTimeInterval(60), title: "تجربة المنبّه — دفتري")
+        await schedule(id: UUID(), at: Date().addingTimeInterval(60), title: "تجربة المنبّه — دفتري", entry: nil)
         return true
     }
 }

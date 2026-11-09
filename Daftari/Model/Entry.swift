@@ -53,6 +53,8 @@ final class Entry {
     var createdAt: Date = Date()
     var alarmLeadMinutes: Int = 60
     var snoozeUntil: Date? = nil
+    /// The iPhone Reminders item this came from (when imported).
+    var externalID: String? = nil
 
     init(title: String, kind: EntryKind, date: Date? = nil, hasTime: Bool = false,
          importance: Importance = .normal, alarmLeadMinutes: Int = 60) {

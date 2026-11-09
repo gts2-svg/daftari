@@ -10,6 +10,8 @@ struct SettingsView: View {
     @AppStorage(Prefs.Key.hijriPrimary) private var hijriPrimary = true
     @AppStorage(Prefs.Key.useSystemCalendar) private var useSystemCalendar = true
     @AppStorage(Prefs.Key.defaultLead) private var defaultLead = 60
+    @AppStorage(Prefs.Key.importReminders) private var importReminders = false
+    @State private var remindersNote: String?
 
     @State private var notifOK = false
     @State private var notifDenied = false
@@ -37,6 +39,20 @@ struct SettingsView: View {
                         Text("ميلادي").tag(false)
                     }
                     Toggle("أظهر مواعيد تقويم الآيفون", isOn: $useSystemCalendar)
+                }
+
+                Section {
+                    Toggle("اجلب تذكيرات الآيفون", isOn: $importReminders)
+                    if importReminders {
+                        Button("اجلبها الحين") { Task { await syncReminders() } }
+                    }
+                } header: {
+                    Text("تذكيرات الآيفون")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("أي تذكير تضيفه في تطبيق التذكيرات أو بسيري ينضاف هنا كل ما تفتح دفتري، ولما تخلّصه هنا يتعلّم «تم» هناك.")
+                        if let remindersNote { Text(remindersNote).foregroundStyle(T.accent) }
+                    }
                 }
 
                 Section {
@@ -101,6 +117,9 @@ struct SettingsView: View {
             .task { await refresh() }
             .onChange(of: hijriPrimary) { _, _ in Scheduler.shared.rebuildSoon() }
             .onChange(of: useSystemCalendar) { _, _ in Scheduler.shared.rebuildSoon() }
+            .onChange(of: importReminders) { _, on in
+                if on { Task { await syncReminders() } }
+            }
         }
     }
 
@@ -146,6 +165,26 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
+    }
+
+    private func syncReminders() async {
+        let service = ReminderService.shared
+        if !service.authorized {
+            if service.canAsk {
+                _ = await service.request()
+            } else {
+                remindersNote = "اسمح لدفتري بالتذكيرات من إعدادات الآيفون."
+                openSettings()
+                return
+            }
+        }
+        guard service.authorized else {
+            remindersNote = "ما سمحت بالتذكيرات، فما أقدر أجلبها."
+            return
+        }
+        let n = await service.sync()
+        Scheduler.shared.rebuildSoon()
+        remindersNote = n == 0 ? "ما فيه تذكيرات جديدة." : "انجلب \(n) تذكير."
     }
 
     private func askNotifications() async {

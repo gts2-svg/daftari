@@ -16,6 +16,7 @@ enum Route: Identifiable, Equatable {
     case morning
     case settings
     case medicine(UUID?)
+    case urgent(UUID)
 
     var id: String {
         switch self {
@@ -27,6 +28,7 @@ enum Route: Identifiable, Equatable {
         case .evening: return "evening"
         case .morning: return "morning"
         case .settings: return "settings"
+        case .urgent(let u): return "urgent-\(u.uuidString)"
         }
     }
 }
@@ -39,13 +41,20 @@ final class AppState: ObservableObject {
     @Published var cover: Route?
 
     func open(_ r: Route) {
-        if case .voice = r {
+        switch r {
+        case .voice, .urgent:
             sheet = nil
             cover = r
-        } else {
+        default:
             cover = nil
             sheet = r
         }
+    }
+
+    /// The full «ضروري» screen (from the alarm or its notification).
+    func showUrgent(_ uid: UUID) {
+        if cover == .urgent(uid) { return }
+        open(.urgent(uid))
     }
 
     /// Opens a route after the current screen has had time to close.
@@ -64,6 +73,7 @@ enum EntryActions {
         e.isCancelled = false
         e.doneAt = e.isDone ? Date() : nil
         e.snoozeUntil = nil
+        ReminderService.shared.writeBack(e)
         commit()
     }
 
@@ -72,6 +82,7 @@ enum EntryActions {
         e.isCancelled = false
         e.doneAt = Date()
         e.snoozeUntil = nil
+        ReminderService.shared.writeBack(e)
         commit()
     }
 
@@ -159,7 +170,13 @@ enum NotificationRouter {
             case "DOSE", "MED": AppState.shared.tab = 3
             default:
                 AppState.shared.tab = 0
-                if let entry { AppState.shared.open(.edit(entry.uid)) }
+                if let entry {
+                    if entry.importance == .urgent && entry.isOpen {
+                        AppState.shared.showUrgent(entry.uid)
+                    } else {
+                        AppState.shared.open(.edit(entry.uid))
+                    }
+                }
             }
         default:
             break
