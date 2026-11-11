@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import SwiftData
 
 /// Sample data and screen routing used only for screenshots on the build machine (debug builds).
 @MainActor
@@ -34,6 +35,16 @@ enum Demo {
             try? await Task.sleep(nanoseconds: 500_000_000)
             app.openPack = Store.allPackLists().first?.uid
         case "nag": app.open(.add(prefill: "تغيير زيت السيارة", date: nil, kind: .task))
+        case "splits":
+            UserDefaults.standard.set(1, forKey: "packSub")
+            app.thingsSection = 1; app.tab = 3
+        case "split", "splitpdf", "split2":
+            UserDefaults.standard.set(1, forKey: "packSub")
+            app.thingsSection = 1; app.tab = 3
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            let trips = (try? Store.context.fetch(FetchDescriptor<SplitTrip>())) ?? []
+            let name = screen == "split2" ? "مدريد" : "سفرة الشمال"
+            app.openSplit = trips.first { $0.name == name }?.uid
         default: app.tab = 0
         }
     }
@@ -106,6 +117,28 @@ enum Demo {
         let travel = PackList(name: "السفر")
         travel.add("الجواز\nالشاحن\nأدويتي")
         ctx.insert(travel)
+
+        let north = SplitTrip(name: "سفرة الشمال")
+        north.setCount(4)
+        let np = north.people
+        north.rename(np[1].id, "سعد")
+        north.rename(np[2].id, "فهد")
+        north.rename(np[3].id, "ناصر")
+        north.toggleSettled(np[1].id)
+        north.addLines("مكة:\nبقالة 44\nبنزين 128\n\nأملج:\n84 عشاء\n141 بنزين\n44 بقالة\n35 قهوة\n\nضباء\n276 سكن\n6 ماء",
+                       currency: .sar, payer: nil)
+        ctx.insert(north)
+
+        let madrid = SplitTrip(name: "مدريد")
+        madrid.mode = .everyone
+        madrid.setCount(3)
+        let mp = madrid.people
+        madrid.rename(mp[1].id, "سعد")
+        madrid.rename(mp[2].id, "فهد")
+        madrid.addLines("1450 فندق", currency: .sar, payer: mp[0].id)
+        madrid.addLines("85 يورو عشاء\nتاكسي 30 €", currency: .sar, payer: mp[1].id)
+        madrid.addLines("قهوة 12", currency: .eur, payer: mp[2].id)
+        ctx.insert(madrid)
         try? ctx.save()
     }
 }

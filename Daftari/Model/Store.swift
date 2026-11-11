@@ -5,7 +5,7 @@ import SwiftData
 enum Store {
     static let container: ModelContainer = {
         do {
-            return try ModelContainer(for: Entry.self, Medicine.self, PackList.self)
+            return try ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self)
         } catch {
             fatalError("تعذر فتح قاعدة البيانات: \(error)")
         }

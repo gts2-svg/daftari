@@ -95,6 +95,7 @@ struct DoseDot: View {
 struct ThingsView: View {
     @Query(sort: \Medicine.createdAt) private var meds: [Medicine]
     @ObservedObject private var app = AppState.shared
+    @AppStorage("packSub") private var packSub = 0
     private var section: Int { app.thingsSection }
 
     var body: some View {
@@ -109,6 +110,8 @@ struct ThingsView: View {
                                 Button {
                                     if section == 0 {
                                         AppState.shared.open(.medicine(nil))
+                                    } else if packSub == 1 {
+                                        app.openSplit = SplitActions.create()
                                     } else {
                                         app.openPack = PackActions.create()
                                     }
@@ -119,7 +122,7 @@ struct ThingsView: View {
                                         .frame(width: 44, height: 44)
                                         .background(T.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                                 }
-                                .accessibilityLabel(section == 0 ? "إضافة دواء" : "قائمة أغراض جديدة")
+                                .accessibilityLabel(section == 0 ? "إضافة دواء" : (packSub == 1 ? "قطة جديدة" : "قائمة أغراض جديدة"))
                             }
                         }
                         Picker("القسم", selection: $app.thingsSection) {
@@ -134,7 +137,12 @@ struct ThingsView: View {
                         if section == 0 {
                             medsSection(now: context.date)
                         } else if section == 1 {
-                            PackListsSection(now: context.date) { app.openPack = $0 }
+                            packSwitch
+                            if packSub == 1 {
+                                SplitTripsSection { app.openSplit = $0 }
+                            } else {
+                                PackListsSection(now: context.date) { app.openPack = $0 }
+                            }
                         } else {
                             comingSoon
                         }
@@ -149,7 +157,32 @@ struct ThingsView: View {
             .navigationDestination(item: $app.openPack) { uid in
                 PackListDetail(uid: uid)
             }
+            .navigationDestination(item: $app.openSplit) { uid in
+                SplitTripDetail(uid: uid)
+            }
         }
+    }
+
+    /// أغراضي: packing lists or the trip «قطة».
+    private var packSwitch: some View {
+        HStack(spacing: 8) {
+            subTab("قوائم الأغراض", icon: "checklist", tag: 0)
+            subTab("القطة", icon: "banknote", tag: 1)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func subTab(_ title: String, icon: String, tag: Int) -> some View {
+        let on = packSub == tag
+        return Button { packSub = tag } label: {
+            Label(title, systemImage: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(on ? .white : T.ink)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 38)
+                .background(on ? T.ink : Color.white, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

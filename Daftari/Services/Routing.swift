@@ -42,6 +42,7 @@ final class AppState: ObservableObject {
     /// أشيائي: 0 أدويتي، 1 أغراضي، 2…4 later.
     @Published var thingsSection = 0
     @Published var openPack: UUID?
+    @Published var openSplit: UUID?
 
     func open(_ r: Route) {
         switch r {
