@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import PDFKit
 
 enum SplitColors {
     static let ink = Color(hex: 0x1D6A63)
@@ -105,7 +106,7 @@ struct SplitTripDetail: View {
     @State private var stopText = ""
     @State private var showNames = false
     @State private var pdf: SharedFile?
-    @State private var showReport = false
+    @State private var pickDate = false
     @FocusState private var nameFocused: Bool
 
     private var trip: SplitTrip? { trips.first { $0.uid == uid } }
@@ -128,7 +129,7 @@ struct SplitTripDetail: View {
         .onAppear {
             if trip?.name.isEmpty == true && trip?.expenses.isEmpty == true { nameFocused = true }
             #if DEBUG
-            if Demo.screen == "splitpdf" { showReport = true }
+            if Demo.screen == "splitpdf", let trip { pdf = SplitPDF.make(trip).map(SharedFile.init) }
             #endif
         }
         .onDisappear {
@@ -142,12 +143,26 @@ struct SplitTripDetail: View {
             }
         }
         .sheet(item: $pdf) { file in
-            ActivityView(items: [file.url])
+            SplitPDFPreview(url: file.url)
         }
-        .sheet(isPresented: $showReport) {
+        .sheet(isPresented: $pickDate) {
             if let trip {
-                ScrollView { SplitReport(trip: trip) }
-                    .background(Color(hex: 0xE9E6DF))
+                NavigationStack {
+                    DatePicker("تاريخ السفرة", selection: Binding(
+                        get: { trip.tripDate },
+                        set: { trip.tripDate = DF.startOfDay($0); SplitActions.commit() }
+                    ), displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .tint(SplitColors.ink)
+                    .padding(.horizontal, 16)
+                    .navigationTitle("تاريخ السفرة")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("تم") { pickDate = false }.fontWeight(.bold) }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .presentationDetents([.medium, .large])
             }
         }
         .alert("محطة جديدة", isPresented: $askStop) {
@@ -179,30 +194,32 @@ struct SplitTripDetail: View {
                 .font(.system(size: 24, weight: .bold))
                 .focused($nameFocused)
                 .submitLabel(.done)
-                HStack(spacing: 8) {
-                    Text(verbatim: "\(DF.hijriText(trip.tripDate)) · \(DF.gregText(trip.tripDate))")
-                        .font(.system(size: 13)).foregroundStyle(T.muted)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                    Spacer(minLength: 0)
-                    DatePicker("تاريخ السفرة", selection: Binding(
-                        get: { trip.tripDate },
-                        set: { trip.tripDate = DF.startOfDay($0); SplitActions.commit() }
-                    ), displayedComponents: .date)
-                    .labelsHidden()
-                    .fixedSize()
+                Button { pickDate = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar")
+                        Text(verbatim: "\(DF.hijriText(trip.tripDate)) · \(DF.gregText(trip.tripDate))")
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SplitColors.ink)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 34)
+                    .background(SplitColors.soft, in: Capsule())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("تاريخ السفرة، اضغط لتغييره")
             }
 
             if trip.expenses.isEmpty {
                 setupCard(trip)
-            } else if !Self.debugHide("dash") {
+            } else {
                 dashboard(trip)
             }
 
-            if !Self.debugHide("entry") { entryCard(trip) }
+            entryCard(trip)
 
             if !trip.expenses.isEmpty {
-                if !Self.debugHide("list") { expenseList(trip) }
+                expenseList(trip)
                 shareCard(trip)
                 setupCard(trip)
             }
@@ -219,15 +236,6 @@ struct SplitTripDetail: View {
             .buttonStyle(.plain)
             .padding(.top, 8)
         }
-    }
-
-    /// Screenshot builds only: hide one part to find what misbehaves.
-    private static func debugHide(_ part: String) -> Bool {
-        #if DEBUG
-        return Demo.screen == "split-no\(part)"
-        #else
-        return false
-        #endif
     }
 
     // MARK: setup — who pays, how many
@@ -970,12 +978,41 @@ struct SharedFile: Identifiable {
     let url: URL
 }
 
-struct ActivityView: UIViewControllerRepresentable {
-    let items: [Any]
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+/// Shows the PDF as it will be sent, with the share button on top.
+struct SplitPDFPreview: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            PDFKitView(url: url)
+                .ignoresSafeArea(edges: .bottom)
+                .background(Color(hex: 0xE9E6DF))
+                .navigationTitle("معاينة")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("إغلاق") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        ShareLink(item: url) {
+                            Label("مشاركة", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
+        }
     }
-    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+
+struct PDFKitView: UIViewRepresentable {
+    let url: URL
+    func makeUIView(context: Context) -> PDFView {
+        let v = PDFView()
+        v.autoScales = true
+        v.displayMode = .singlePageContinuous
+        v.backgroundColor = UIColor(red: 0.91, green: 0.90, blue: 0.87, alpha: 1)
+        v.document = PDFDocument(url: url)
+        return v
+    }
+    func updateUIView(_ v: PDFView, context: Context) {}
 }
 
 // MARK: - actions
