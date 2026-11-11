@@ -38,7 +38,7 @@ enum Demo {
         case "splits":
             UserDefaults.standard.set(1, forKey: "packSub")
             app.thingsSection = 1; app.tab = 3
-        case "split", "splitpdf", "split2":
+        case "split", "splitpdf", "split2", "split-nodash", "split-nolist", "split-noentry":
             UserDefaults.standard.set(1, forKey: "packSub")
             app.thingsSection = 1; app.tab = 3
             try? await Task.sleep(nanoseconds: 500_000_000)

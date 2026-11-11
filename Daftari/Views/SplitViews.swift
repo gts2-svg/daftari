@@ -180,26 +180,29 @@ struct SplitTripDetail: View {
                 .focused($nameFocused)
                 .submitLabel(.done)
                 HStack(spacing: 8) {
-                    DatePicker("", selection: Binding(
+                    Text(verbatim: "\(DF.hijriText(trip.tripDate)) · \(DF.gregText(trip.tripDate))")
+                        .font(.system(size: 13)).foregroundStyle(T.muted)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
+                    DatePicker("تاريخ السفرة", selection: Binding(
                         get: { trip.tripDate },
                         set: { trip.tripDate = DF.startOfDay($0); SplitActions.commit() }
                     ), displayedComponents: .date)
                     .labelsHidden()
-                    Text(verbatim: DF.hijriText(trip.tripDate)).font(.system(size: 13)).foregroundStyle(T.muted)
-                    Spacer(minLength: 0)
+                    .fixedSize()
                 }
             }
 
             if trip.expenses.isEmpty {
                 setupCard(trip)
-            } else {
+            } else if !Self.debugHide("dash") {
                 dashboard(trip)
             }
 
-            entryCard(trip)
+            if !Self.debugHide("entry") { entryCard(trip) }
 
             if !trip.expenses.isEmpty {
-                expenseList(trip)
+                if !Self.debugHide("list") { expenseList(trip) }
                 shareCard(trip)
                 setupCard(trip)
             }
@@ -216,6 +219,15 @@ struct SplitTripDetail: View {
             .buttonStyle(.plain)
             .padding(.top, 8)
         }
+    }
+
+    /// Screenshot builds only: hide one part to find what misbehaves.
+    private static func debugHide(_ part: String) -> Bool {
+        #if DEBUG
+        return Demo.screen == "split-no\(part)"
+        #else
+        return false
+        #endif
     }
 
     // MARK: setup — who pays, how many
@@ -313,7 +325,8 @@ struct SplitTripDetail: View {
                     Text("المجموع").font(.system(size: 13)).foregroundStyle(.white.opacity(0.8))
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(verbatim: SplitFormat.money(trip.total))
-                            .font(.system(size: 38, weight: .bold)).monospacedDigit()
+                            .font(.system(size: 34, weight: .bold)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.5)
                         Text("ر.س").font(.system(size: 15, weight: .semibold))
                     }
                     Text(verbatim: "\(trip.expenses.count) مصروف" + (stops.isEmpty ? "" : " · \(stops.count) محطات"))
@@ -324,6 +337,7 @@ struct SplitTripDetail: View {
                     Text("على كل واحد").font(.system(size: 13)).foregroundStyle(.white.opacity(0.8))
                     Text(verbatim: SplitFormat.money(rounded))
                         .font(.system(size: 28, weight: .bold)).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.5)
                     Text(verbatim: abs(exact - rounded) > 0.009
                          ? "\(trip.count) أشخاص · بالضبط \(SplitFormat.money(exact))"
                          : "\(trip.count) أشخاص")
@@ -386,13 +400,8 @@ struct SplitTripDetail: View {
                                 Text(verbatim: SplitFormat.money(s.amount))
                                     .font(.system(size: 14, weight: .semibold)).monospacedDigit()
                             }
-                            GeometryReader { geo in
-                                Capsule().fill(T.line)
-                                    .overlay(alignment: .leading) {
-                                        Capsule().fill(SplitColors.ink).frame(width: geo.size.width * s.amount / max(top, 0.01))
-                                    }
-                            }
-                            .frame(height: 7)
+                            ProgressView(value: min(s.amount, top), total: max(top, 0.01))
+                                .tint(SplitColors.ink)
                         }
                     }
                 }
@@ -418,26 +427,31 @@ struct SplitTripDetail: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(done == others.count ? T.accent : T.muted)
                     }
-                    FlowLayout(spacing: 8) {
+                    VStack(spacing: 6) {
                         ForEach(others) { p in
                             Button {
                                 trip.toggleSettled(p.id)
                                 SplitActions.commit()
                             } label: {
-                                HStack(spacing: 6) {
+                                HStack(spacing: 10) {
                                     Image(systemName: p.settled ? "checkmark.circle.fill" : "circle")
-                                    Text(trip.personName(p))
+                                        .font(.system(size: 20))
+                                        .foregroundStyle(p.settled ? T.accent : T.track)
+                                    Text(trip.personName(p)).font(.system(size: 15, weight: .semibold)).foregroundStyle(T.ink)
+                                    Spacer()
+                                    Text(p.settled ? "حوّل" : "باقي")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(p.settled ? T.accent : T.muted)
                                 }
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(p.settled ? .white : T.ink)
                                 .padding(.horizontal, 12)
-                                .frame(minHeight: 38)
-                                .background(p.settled ? SplitColors.ink : T.field, in: Capsule())
+                                .frame(minHeight: 44)
+                                .background(T.field, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
                     }
-                    Text(verbatim: "كل واحد عليه \(SplitFormat.money(trip.share.rounded())) ر.س. اضغط على اسمه إذا حوّل. هذي ما تطلع في المشاركة.")
+                    Text(verbatim: "كل واحد عليه \(SplitFormat.money(trip.share.rounded())) ر.س. اضغط على اسمه إذا حوّل. هذا القسم ما يطلع في المشاركة.")
                         .font(.system(size: 12)).foregroundStyle(T.muted)
                 }
                 .padding(16)
