@@ -4,9 +4,7 @@ name: sideload
 # Apple account, and publishes it on the "sideload" release so it can be
 # downloaded on the phone. SideStore signs it on the device.
 on:
-  push:
-    branches: [main]
-    paths-ignore: ["README.md"]
+  # Manual only (private repo: macOS minutes are limited).
   workflow_dispatch:
     inputs:
       runner:
