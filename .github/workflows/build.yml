@@ -60,8 +60,8 @@ jobs:
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/shots"
           for s in today ideas packs pack nag morning settings splits split split2 splitpdf; do
-            xcrun simctl terminate "$UDID" com.gts2svg.daftari || true
-            SIMCTL_CHILD_TZ=Asia/Riyadh xcrun simctl launch "$UDID" com.gts2svg.daftari -demo -screen "$s"
+            xcrun simctl terminate "$UDID" com.gts2svg.daftari.9QR9KTSAZ9 || true
+            SIMCTL_CHILD_TZ=Asia/Riyadh xcrun simctl launch "$UDID" com.gts2svg.daftari.9QR9KTSAZ9 -demo -screen "$s"
             sleep 14
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$s.png"
             if ! xcrun simctl spawn "$UDID" launchctl list | grep -q daftari; then echo "::warning::$s — app not running (crash?)"; fi
