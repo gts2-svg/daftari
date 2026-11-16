@@ -61,6 +61,7 @@ struct SettingsView: View {
                     Toggle("اجلب تذكيرات الآيفون", isOn: $importReminders)
                     if importReminders {
                         Button("اجلبها الحين") { Task { await syncReminders() } }
+                        NavigationLink("أي القوائم؟") { ReminderListsView() }
                     }
                 } header: {
                     Text("تذكيرات الآيفون")
@@ -317,5 +318,31 @@ struct SettingsView: View {
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }
+    }
+}
+
+/// Which iPhone Reminders lists come into دفتري (none chosen = all).
+struct ReminderListsView: View {
+    @State private var chosen = Set(ReminderService.chosenLists)
+    private let lists = ReminderService.shared.lists
+
+    var body: some View {
+        Form {
+            Section {
+                ForEach(lists) { l in
+                    Toggle(l.title, isOn: Binding(
+                        get: { chosen.isEmpty || chosen.contains(l.id) },
+                        set: { on in
+                            if chosen.isEmpty { chosen = Set(lists.map { $0.id }) }
+                            if on { chosen.insert(l.id) } else { chosen.remove(l.id) }
+                            if chosen.count == lists.count { chosen = [] }
+                            ReminderService.chosenLists = Array(chosen)
+                        }))
+                }
+            } footer: {
+                Text("القوائم المشتركة مع غيرك ممكن تزحم تنبيهاتك؛ اقفل اللي ما تبيه.")
+            }
+        }
+        .navigationTitle("قوائم التذكيرات")
     }
 }

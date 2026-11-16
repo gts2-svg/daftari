@@ -32,8 +32,27 @@ final class ReminderService {
         let priority: Int
     }
 
+    /// The Reminders lists on the phone (for choosing which ones come in).
+    struct ListInfo: Identifiable, Hashable {
+        let id: String
+        let title: String
+    }
+
+    var lists: [ListInfo] {
+        guard authorized else { return [] }
+        return store.calendars(for: .reminder).map { ListInfo(id: $0.calendarIdentifier, title: $0.title) }
+    }
+
+    /// Lists chosen in Settings; empty means all of them.
+    static var chosenLists: [String] {
+        get { UserDefaults.standard.stringArray(forKey: "reminderLists") ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: "reminderLists") }
+    }
+
     private func incomplete() async -> [Item] {
-        let predicate = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: nil, calendars: nil)
+        let chosen = Set(Self.chosenLists)
+        let calendars = chosen.isEmpty ? nil : store.calendars(for: .reminder).filter { chosen.contains($0.calendarIdentifier) }
+        let predicate = store.predicateForIncompleteReminders(withDueDateStarting: nil, ending: nil, calendars: calendars)
         return await withCheckedContinuation { cont in
             store.fetchReminders(matching: predicate) { reminders in
                 let items = (reminders ?? []).map {
@@ -60,6 +79,7 @@ final class ReminderService {
         var added = 0
 
         for item in items where imported[item.id] == nil {
+            if added >= 100 { break }   // a huge shared list can't flood the app in one go
             let title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !title.isEmpty else { continue }
             var date: Date?
