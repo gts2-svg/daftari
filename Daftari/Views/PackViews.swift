@@ -283,7 +283,11 @@ struct PackListDetail: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button("حذف", systemImage: "trash", role: .destructive) { PackActions.remove(item.id, from: list) }
+            Menu {
+                Button("نعم، احذف", systemImage: "trash", role: .destructive) { PackActions.remove(item.id, from: list) }
+            } label: {
+                Label("حذف", systemImage: "trash")
+            }
         }
         .accessibilityLabel("\(item.text)، \(item.done ? "جاهز" : "ما جهّزته")")
     }

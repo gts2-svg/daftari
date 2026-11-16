@@ -153,7 +153,11 @@ struct ItemRow: View {
                 }
                 Button("لبكرة", systemImage: "arrow.uturn.backward") { EntryActions.postpone(e) }
                 Button("تعديل", systemImage: "pencil") { AppState.shared.open(.edit(e.uid)) }
-                Button("حذف", systemImage: "trash", role: .destructive) { EntryActions.delete(e) }
+                Menu {
+                Button("نعم، احذف", systemImage: "trash", role: .destructive) { EntryActions.delete(e) }
+            } label: {
+                Label("حذف", systemImage: "trash")
+            }
             }
         }
     }
@@ -209,4 +213,31 @@ struct KeyboardDone: ViewModifier {
 
 extension View {
     func keyboardDone() -> some View { modifier(KeyboardDone()) }
+}
+
+/// Shown when the real alarm permission is off: «ضروري» would then be a silent notification.
+struct AlarmOffBanner: View {
+    var body: some View {
+        Button {
+            Task {
+                if AlarmService.canAsk { await AlarmService.requestAuthorization() }
+                else if let url = URL(string: UIApplication.openSettingsURLString) { _ = await UIApplication.shared.open(url) }
+                Scheduler.shared.rebuildSoon()
+            }
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "alarm.waves.left.and.right").font(.system(size: 18, weight: .bold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("المنبّه الحقيقي مقفل").font(.system(size: 16, weight: .bold))
+                    Text("بدونه ما يرن الضروري والجوال صامت. اضغط هنا وفعّله.").font(.system(size: 14))
+                }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(T.urgentInk)
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
 }

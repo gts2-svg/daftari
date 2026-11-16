@@ -33,7 +33,7 @@ enum Importance: Int, CaseIterable, Hashable {
     var hint: String {
         switch self {
         case .normal: return "إشعار"
-        case .important: return "يتكرر لين «تم»"
+        case .important: return "رنة + تكرار"
         case .urgent: return "منبّه حقيقي"
         }
     }

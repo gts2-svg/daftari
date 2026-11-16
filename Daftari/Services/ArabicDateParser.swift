@@ -82,7 +82,7 @@ enum ArabicDateParser {
     ]
 
     private static let amWords: Set<String> = ["الصبح", "صباحا", "الصباح", "الفجر", "ص"]
-    private static let pmWords: Set<String> = ["العصر", "عصرا", "المغرب", "العشا", "العشاء", "المسا", "المساء",
+    private static let pmWords: Set<String> = ["العصر", "عصرا", "المغرب", "العشا", "العشاء", "عشا", "عشاء", "المسا", "المساء",
                                                "مساء", "مساءا", "بالليل", "الليل", "ليلا", "م"]
     private static let noonWords: Set<String> = ["الظهر", "ظهرا"]
 
@@ -163,7 +163,18 @@ enum ArabicDateParser {
                 let hasMin = m.range(at: 3).location != NSNotFound
                 let hasFrac = m.range(at: 4).location != NSNotFound
                 let hasPeriod = m.range(at: 5).location != NSNotFound
-                return hasPrefix || hasMin || hasFrac || hasPeriod || (dayFound && n >= 1 && n <= 12)
+                if hasPrefix || hasMin || hasFrac || hasPeriod { return true }
+                // A bare number counts as the hour only right next to the day word («الخميس 9»),
+                // never a case number or a count («القضية رقم 5 بكرة»، «3 علب بكرة»).
+                guard dayFound && n >= 1 && n <= 12 else { return false }
+                let before = scan.norm.substring(to: m.range.location)
+                let lastWords = before.split(separator: " ").suffix(1).joined()
+                if ["رقم", "عدد", "حق", "ماده", "المادة", "الماده", "صك"].contains(lastWords) { return false }
+                return scan.taken.contains { r in
+                    let gapAfter = m.range.location - (r.location + r.length)
+                    let gapBefore = r.location - (m.range.location + m.range.length)
+                    return (gapAfter >= 0 && gapAfter <= 2) || (gapBefore >= 0 && gapBefore <= 2)
+                }
             }) {
                 var h = Int(scan.g(m, 2) ?? "") ?? 9
                 var minute = Int(scan.g(m, 3) ?? "") ?? 0
@@ -185,19 +196,27 @@ enum ArabicDateParser {
                 } else if noonWords.contains(period) {
                     if h <= 4 { h += 12 }
                 } else if h <= 23 && h < 13 {
+                    let text = scan.norm as String
+                    let evening = ["عشا", "عشاء", "المغرب", "الليل", "بالليل", "عزيمه"].contains { text.contains($0) }
                     if h >= 1 && h <= 6 { h += 12 }
+                    else if evening && h >= 7 && h <= 11 { h += 12 }   // «عشا عند خالد الخميس 9» → 9 م
                 }
                 hm = (min(h, 23), min(minute, 59))
                 scan.take(m)
-            } else if let m = scan.find(B + "(الصبح|الظهر|العصر|المغرب|العشا|العشاء|بالليل|الليل)" + E) {
-                switch scan.g(m, 1) ?? "" {
-                case "الصبح": hm = (8, 0)
-                case "الظهر": hm = (12, 30)
-                case "العصر": hm = (16, 0)
-                case "المغرب": hm = (18, 0)
-                case "العشا", "العشاء": hm = (20, 0)
-                default: hm = (21, 0)
+            } else if let m = scan.find(B + "(?:(بعد|قبل)\\s+)?(الصبح|الظهر|العصر|المغرب|العشا|العشاء|بالليل|الليل)" + E) {
+                var base: (Int, Int)
+                switch scan.g(m, 2) ?? "" {
+                case "الصبح": base = (8, 0)
+                case "الظهر": base = (12, 30)
+                case "العصر": base = (16, 0)
+                case "المغرب": base = (18, 0)
+                case "العشا", "العشاء": base = (20, 0)
+                default: base = (21, 0)
                 }
+                // «بعد المغرب» half an hour later, «قبل العصر» half an hour earlier.
+                let shift = scan.g(m, 1) == "بعد" ? 30 : (scan.g(m, 1) == "قبل" ? -30 : 0)
+                let total = base.0 * 60 + base.1 + shift
+                hm = (total / 60, total % 60)
                 scan.take(m)
             }
         }

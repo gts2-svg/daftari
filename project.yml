@@ -41,6 +41,10 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSupportsIndirectInputEvents: true
         ITSAppUsesNonExemptEncryption: false
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.gts2svg.daftari.refresh]
         NSMicrophoneUsageDescription: يحتاج دفتري المايك عشان تسجّل أفكارك ويومك بصوتك.
         NSSpeechRecognitionUsageDescription: يحوّل دفتري كلامك إلى نص داخل جوالك.
         NSCalendarsFullAccessUsageDescription: يعرض دفتري مواعيد تقويم الآيفون مع يومك.

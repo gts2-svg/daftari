@@ -3,13 +3,29 @@ import SwiftData
 
 @MainActor
 enum Store {
+    /// Set when the saved data could not be opened. The app then runs on an empty temporary
+    /// store and shows a recovery screen, instead of crashing on every launch.
+    static private(set) var openError: String?
+
     static let container: ModelContainer = {
         do {
             return try ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self)
         } catch {
-            fatalError("تعذر فتح قاعدة البيانات: \(error)")
+            openError = "\(error)"
+            let memory = ModelConfiguration(isStoredInMemoryOnly: true)
+            // An in-memory container with the same models cannot fail for schema reasons.
+            return try! ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self,
+                                       configurations: memory)
         }
     }()
+
+    /// The files of the saved database (to hand them over when it can't be opened).
+    static var storeFiles: [URL] {
+        guard let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+              let all = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+        else { return [] }
+        return all.filter { $0.lastPathComponent.hasPrefix("default.store") }
+    }
 
     static var context: ModelContext { container.mainContext }
 
@@ -37,8 +53,20 @@ enum Store {
         allPackLists().first { $0.uid == uid }
     }
 
+    static func allTrips() -> [SplitTrip] {
+        (try? context.fetch(FetchDescriptor<SplitTrip>())) ?? []
+    }
+
+    /// Last save failure, shown in Settings so a silent failure doesn't go unnoticed.
+    static private(set) var lastSaveError: String?
+
     static func save() {
-        try? context.save()
+        do {
+            try context.save()
+            lastSaveError = nil
+        } catch {
+            lastSaveError = "\(error.localizedDescription)"
+        }
     }
 }
 

@@ -646,7 +646,11 @@ struct SplitTripDetail: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button("حذف", systemImage: "trash", role: .destructive) { trip.remove(e.id); SplitActions.commit() }
+            Menu {
+                Button("نعم، احذف", systemImage: "trash", role: .destructive) { trip.remove(e.id); SplitActions.commit() }
+            } label: {
+                Label("حذف", systemImage: "trash")
+            }
         }
     }
 

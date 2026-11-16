@@ -89,7 +89,7 @@ struct UrgentView: View {
                     .frame(minHeight: 44)
             }
 
-            Text("يرن حتى لو الجوال صامت · يتكرر لين تضغط «تم»")
+            Text("يرن حتى لو الجوال صامت · يذكّرك 4 مرات كل ربع ساعة")
                 .font(.system(size: 13))
                 .opacity(0.8)
                 .multilineTextAlignment(.center)

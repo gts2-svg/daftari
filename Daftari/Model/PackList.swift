@@ -6,6 +6,20 @@ struct PackItem: Codable, Hashable, Identifiable {
     var id = UUID()
     var text: String
     var done = false
+
+    init(id: UUID = UUID(), text: String, done: Bool = false) {
+        self.id = id
+        self.text = text
+        self.done = done
+    }
+
+    /// Tolerant: a field added or missing later never makes the whole list read as empty.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
+        text = (try? c.decodeIfPresent(String.self, forKey: .text)) ?? ""
+        done = (try? c.decodeIfPresent(Bool.self, forKey: .done)) ?? false
+    }
 }
 
 /// A reusable packing list: البر، السفر، العزبة… Tick while packing, then «صفّر» for next time.

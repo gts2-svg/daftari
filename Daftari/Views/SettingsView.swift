@@ -2,6 +2,7 @@ import SwiftUI
 import UserNotifications
 import Speech
 import AVFoundation
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -23,6 +24,17 @@ struct SettingsView: View {
     @State private var calendarOK = false
     @State private var micOK = false
     @State private var toast: String?
+
+    // Reminder check
+    @State private var upcoming: [(Date, String)] = []
+    @State private var pendingCount = 0
+
+    // Backup
+    @State private var exportURL: URL?
+    @State private var exportError: String?
+    @State private var importing = false
+    @State private var pendingRestore: DaftariBackup?
+    @State private var restoreNote: String?
 
     var body: some View {
         NavigationStack {
@@ -112,6 +124,59 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    LabeledContent("تنبيهات مجدولة الحين", value: "\(pendingCount) من 64")
+                    if Scheduler.shared.lastDropped > 0 {
+                        Text("\(Scheduler.shared.lastDropped) تذكير ما وسعها الجدول الحين، تنضاف تلقائياً لما يقرب وقتها.")
+                            .font(.system(size: 14)).foregroundStyle(T.urgentInk)
+                    }
+                    if let h = Scheduler.shared.lastHorizon {
+                        LabeledContent("مجدولة حتى", value: "\(DF.weekday(h)) \(DF.fullDate(h, year: false))")
+                    }
+                    LabeledContent("المنبّه الحقيقي", value: AlarmService.isAuthorized ? "يعمل" : "مقفل")
+                    ForEach(Array(upcoming.enumerated()), id: \.offset) { _, u in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(u.1).font(.system(size: 15, weight: .semibold))
+                            Text("\(DF.relativeDay(u.0)) · \(DF.time(u.0))").font(.system(size: 13)).foregroundStyle(T.muted)
+                        }
+                    }
+                } header: {
+                    Text("فحص التنبيهات")
+                } footer: {
+                    Text("هذي أقرب التنبيهات المجدولة فعلاً في جوالك. افتح دفتري مرة كل كم يوم عشان يتجدد الجدول.")
+                }
+
+                Section {
+                    Button {
+                        do { exportURL = try BackupService.exportFile(); exportError = nil }
+                        catch { exportError = "ما قدرت أجهّز النسخة: \(error.localizedDescription)" }
+                    } label: {
+                        Label("جهّز نسخة احتياطية", systemImage: "square.and.arrow.up")
+                    }
+                    if let exportURL {
+                        ShareLink(item: exportURL) {
+                            Label("احفظها في «الملفات» أو أرسلها", systemImage: "folder")
+                        }
+                    }
+                    Button {
+                        importing = true
+                    } label: {
+                        Label("استرجع من نسخة", systemImage: "square.and.arrow.down")
+                    }
+                } header: {
+                    Text("النسخة الاحتياطية")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("ملف واحد فيه كل شيء: المواعيد والمهام والأفكار والأدوية والقوائم والقطة والإعدادات. احفظه في «الملفات» (iCloud Drive) قبل ما تحذف التطبيق أو تنقله.")
+                        if let last = BackupService.lastAutoBackup {
+                            Text("آخر نسخة تلقائية أسبوعية: \(DF.fullDate(last)) — تلقاها في «الملفات» › «على الـ iPhone» › «دفتري».")
+                        }
+                        if let exportError { Text(exportError).foregroundStyle(.red) }
+                        if let restoreNote { Text(restoreNote).foregroundStyle(T.accent) }
+                        if let err = Store.lastSaveError { Text("تنبيه: آخر حفظ ما نجح (\(err)).").foregroundStyle(.red) }
+                    }
+                }
+
+                Section {
                     LabeledContent("الإصدار", value: Self.versionText)
                 }
             }
@@ -123,6 +188,35 @@ struct SettingsView: View {
                 }
             }
             .task { await refresh() }
+            .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+                switch result {
+                case .success(let url):
+                    do { pendingRestore = try BackupService.read(url: url) }
+                    catch { restoreNote = error.localizedDescription }
+                case .failure:
+                    break
+                }
+            }
+            .confirmationDialog(pendingRestore.map { "النسخة فيها: \($0.summary)" } ?? "",
+                                isPresented: Binding(get: { pendingRestore != nil },
+                                                     set: { if !$0 { pendingRestore = nil } }),
+                                titleVisibility: .visible) {
+                Button("أضف اللي مو موجود عندي") {
+                    if let b = pendingRestore {
+                        let n = BackupService.restore(b, replace: false)
+                        restoreNote = n == 0 ? "كل ما في النسخة موجود عندك." : "انضاف \(n) من النسخة."
+                    }
+                    pendingRestore = nil
+                }
+                Button("استبدل كل بياناتي بالنسخة", role: .destructive) {
+                    if let b = pendingRestore {
+                        BackupService.restore(b, replace: true)
+                        restoreNote = "استرجعت النسخة كاملة."
+                    }
+                    pendingRestore = nil
+                }
+                Button("إلغاء", role: .cancel) { pendingRestore = nil }
+            }
             .onChange(of: hijriPrimary) { _, _ in Scheduler.shared.rebuildSoon() }
             .onChange(of: useSystemCalendar) { _, _ in Scheduler.shared.rebuildSoon() }
             .onChange(of: importReminders) { _, on in
@@ -213,6 +307,8 @@ struct SettingsView: View {
         remindersOK = ReminderService.shared.authorized
         alarmOK = AlarmService.isAuthorized
         calendarOK = CalendarService.shared.authorized
+        upcoming = await Scheduler.shared.upcoming()
+        pendingCount = await Scheduler.shared.pendingCount()
         micOK = SFSpeechRecognizer.authorizationStatus() == .authorized
             && AVAudioApplication.shared.recordPermission == .granted
     }

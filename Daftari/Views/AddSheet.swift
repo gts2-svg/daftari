@@ -1,4 +1,5 @@
 import SwiftUI
+import EventKit
 import SwiftData
 
 /// «إضافة سريعة»: write it the way you'd say it; the date, time and type are picked up on their own.
@@ -23,6 +24,10 @@ struct AddSheet: View {
     @State private var importance: Importance = .normal
     @State private var lead = 60
     @State private var manualDate = false
+    /// Opened from a calendar day: the day is kept, but a time in the text is still picked up.
+    @State private var dayPinned = false
+    @State private var clash: String?
+    @State private var clashAcknowledged = false
     @State private var manualKind = false
     @State private var loaded = false
     @State private var dictationBase = ""
@@ -44,6 +49,7 @@ struct AddSheet: View {
                         dateCard
                         if !hasDate { nagCard }
                         importanceCard
+                        if importance != .normal && hasDate && !AlarmService.isAuthorized { AlarmOffBanner() }
                         if hasDate { ladderCard }
                     }
                     if let err = speech.errorText {
@@ -72,18 +78,17 @@ struct AddSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("إلغاء") { speech.cancel(); dismiss() }
                 }
-                if editing != nil {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button(role: .destructive) { confirmDelete = true } label: {
-                            Image(systemName: "trash")
-                        }
-                        .accessibilityLabel("حذف")
-                    }
-                }
             }
             .confirmationDialog("تحذفه؟", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("حذف", role: .destructive) { deleteEditing() }
                 Button("إلغاء", role: .cancel) {}
+            }
+            .confirmationDialog(clash ?? "", isPresented: Binding(get: { clash != nil }, set: { if !$0 { clash = nil } }),
+                                titleVisibility: .visible) {
+                Button("احفظ رغم ذلك") { clashAcknowledged = true; clash = nil; save() }
+                Button("أغيّر الوقت") { clash = nil }
+                Button("انسخ رسالة اعتذار") { UIPasteboard.general.string = apologyText; clash = nil }
+                Button("إلغاء", role: .cancel) { clash = nil }
             }
         }
         .onAppear(perform: load)
@@ -269,7 +274,7 @@ struct AddSheet: View {
             return [(morning, "في رسالة الصباح", false)] + (hasTime ? [(at, "إشعار", false)] : [])
         case .important:
             return [("قبل يوم 8:00 م", "إشعار مهم", false), (morning, "في رسالة الصباح", false),
-                    (at, "يتكرر كل 30 دقيقة لين «تم»", true)]
+                    (at, hasTime ? "رنة منبّه، ثم يتكرر 5 مرات كل نص ساعة" : "يتكرر 5 مرات كل نص ساعة", true)]
         case .urgent:
             let leadText: String = {
                 switch lead {
@@ -283,7 +288,7 @@ struct AddSheet: View {
             }()
             return [("قبل أسبوع", "إشعار", false), ("قبل يوم 8:00 م", "إشعار مهم", false),
                     (morning, "في رسالة الصباح", false), (leadText, "منبّه حقيقي", true),
-                    (at, "يتكرر لين «تم»", true)]
+                    (at, "يتكرر 4 مرات كل ربع ساعة", true)]
         }
     }
 
@@ -291,7 +296,7 @@ struct AddSheet: View {
         Button(action: save) {
             Text("حفظ")
                 .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(trimmed.isEmpty ? T.muted : .white)
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .background(trimmed.isEmpty ? T.track : T.accent, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
@@ -339,7 +344,7 @@ struct AddSheet: View {
         } else {
             text = prefill
             if let presetDate {
-                hasDate = true; day = presetDate; manualDate = true
+                hasDate = true; day = presetDate; dayPinned = true
             }
             if let presetKind { kind = presetKind; manualKind = true }
             if !prefill.isEmpty { applyParse() }
@@ -350,7 +355,12 @@ struct AddSheet: View {
     private func applyParse() {
         guard editing == nil else { return }
         let p = ArabicDateParser.parse(text)
-        if !manualDate {
+        if dayPinned && !manualDate {
+            if let d = p.date, p.hasTime {
+                hasTime = true
+                time = d
+            }
+        } else if !manualDate {
             if let d = p.date {
                 hasDate = true
                 day = d
@@ -380,10 +390,16 @@ struct AddSheet: View {
         let parsed = ArabicDateParser.parse(text)
         let title: String = {
             if editing != nil { return trimmed }
-            if !manualDate && parsed.date != nil { return parsed.title }
+            // Date and time words never stay in the title («بكرة الساعة 10»).
+            if parsed.date != nil && !parsed.title.isEmpty { return parsed.title }
             return trimmed
         }()
         let date: Date? = (kind != .idea && hasDate) ? combinedDate : nil
+
+        if let date, !clashAcknowledged, let found = clashText(for: date, timed: hasTime) {
+            clash = found
+            return
+        }
 
         let entry: Entry
         if let e = editing {
@@ -414,6 +430,35 @@ struct AddSheet: View {
         try? ctx.save()
         Scheduler.shared.rebuildSoon()
         dismiss()
+    }
+
+    /// Another open item (or iPhone calendar event) within an hour, or on the same day for all-day items.
+    private func clashText(for date: Date, timed: Bool) -> String? {
+        let me = editingUID
+        let dayStart = DF.startOfDay(date)
+        let dayEnd = DF.addDays(1, to: dayStart)
+        var hits: [String] = []
+        for e in Store.allEntries() where e.uid != me && e.isScheduledKind && e.isOpen {
+            guard let d = e.date, d >= dayStart, d < dayEnd else { continue }
+            if timed && e.hasTime {
+                if abs(d.timeIntervalSince(date)) < 3600 { hits.append("«\(e.title)» الساعة \(DF.time(d))") }
+            } else if !timed && kind == .appointment && e.kind == .appointment {
+                hits.append("«\(e.title)»" + (e.hasTime ? " الساعة \(DF.time(d))" : ""))
+            }
+        }
+        if timed && Prefs.useSystemCalendar {
+            for ev in CalendarService.shared.events(from: date.addingTimeInterval(-3600), to: date.addingTimeInterval(3600))
+            where !ev.isAllDay {
+                hits.append("«\(ev.title ?? "موعد")» الساعة \(DF.time(ev.startDate))")
+            }
+        }
+        guard !hits.isEmpty else { return nil }
+        return "عندك في نفس الوقت تقريباً: " + hits.prefix(3).joined(separator: "، ")
+    }
+
+    private var apologyText: String {
+        let when = hasTime ? "\(DF.weekday(day)) \(DF.fullDate(day)) الساعة \(DF.time(combinedDate))" : "\(DF.weekday(day)) \(DF.fullDate(day))"
+        return "السلام عليكم، أعتذر عن موعد \(trimmed) يوم \(when) لارتباط سابق، وأقترح نحدد موعداً آخر يناسبكم."
     }
 
     private func deleteEditing() {

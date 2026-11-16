@@ -1,15 +1,20 @@
 name: testflight
 
 # Signs the app with the Apple account and uploads it to TestFlight.
-# Runs on every change to main, on the 1st of each month (so the 90-day TestFlight
-# build never expires), and on demand. Does nothing until the four secrets exist.
+# Runs only on demand (Actions › testflight › Run workflow) and on the 1st of each month,
+# so the 90-day TestFlight build never expires. Not on every push: each run spends
+# macOS minutes. Does nothing until the four secrets exist.
 on:
-  push:
-    branches: [main]
-    paths-ignore: ["README.md"]
   schedule:
     - cron: "0 2 1 * *"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight
+  cancel-in-progress: true
 
 jobs:
   # A cheap Linux check first, so a missing key never spends macOS minutes.
@@ -37,13 +42,10 @@ jobs:
     if: needs.gate.outputs.ready == 'true'
     runs-on: macos-15-intel
     timeout-minutes: 60
-    env:
-      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Select newest Xcode
         run: |
@@ -57,6 +59,11 @@ jobs:
           xcodegen generate
 
       - name: Archive
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           mkdir -p "$RUNNER_TEMP/keys"
           KEY="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
@@ -72,6 +79,11 @@ jobs:
           test -d "$RUNNER_TEMP/Daftari.xcarchive" || { tail -n 60 archive.log; exit 1; }
 
       - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           KEY="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF

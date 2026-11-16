@@ -145,6 +145,11 @@ struct VoiceCaptureView: View {
         guard !t.isEmpty else { return }
         ctx.insert(Entry(title: t, kind: mode == .journal ? .journal : .idea))
         try? ctx.save()
+        if mode == .journal {
+            // Recording the day counts as logging it: no «ما سجّلت يومك» later tonight.
+            Prefs.markEveningLogged()
+            Scheduler.shared.rebuildSoon()
+        }
         dismiss()
     }
 

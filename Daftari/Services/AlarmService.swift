@@ -25,14 +25,19 @@ enum AlarmService {
         }
     }
 
-    /// Cancels every alarm we set and schedules one for each open «ضروري» item in the next 30 days.
+    /// Cancels every alarm we set and schedules one for each open «ضروري» item in the next 60 days.
     static func rebuild(entries: [Entry], now: Date = Date()) async {
         let manager = AlarmManager.shared
         if let existing = try? manager.alarms {
             for alarm in existing { try? manager.cancel(id: alarm.id) }
         }
         guard isAuthorized else { return }
-        let horizon = DF.addDays(30, to: now)
+        let horizon = DF.addDays(60, to: now)
+        // «مهم» with a time: one real ring at the time (a notification alone is silent on a muted phone).
+        for e in entries where e.isScheduledKind && e.isOpen && e.importance == .important && e.hasTime {
+            guard let anchor = e.anchorDate, anchor > now, anchor < horizon else { continue }
+            await schedule(id: UUID(), at: anchor, title: "مهم: \(e.title) · الآن", entry: e.uid)
+        }
         for e in entries where e.isScheduledKind && e.isOpen && e.importance == .urgent {
             guard let anchor = e.anchorDate else { continue }
             let when = e.hasTime ? DF.time(anchor) : DF.relativeDay(anchor, now: now)

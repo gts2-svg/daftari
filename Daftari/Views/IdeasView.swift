@@ -110,7 +110,11 @@ struct IdeasView: View {
         .contextMenu {
             Button("حوّلها لمهمة", systemImage: "checklist") { AppState.shared.open(.convert(e.uid)) }
             Button("انسخ", systemImage: "doc.on.doc") { UIPasteboard.general.string = e.title }
-            Button("حذف", systemImage: "trash", role: .destructive) { EntryActions.delete(e) }
+            Menu {
+                Button("نعم، احذف", systemImage: "trash", role: .destructive) { EntryActions.delete(e) }
+            } label: {
+                Label("حذف", systemImage: "trash")
+            }
         }
     }
 

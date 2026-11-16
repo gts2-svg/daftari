@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         NotificationFactory.registerCategories()
+        BackgroundRefresh.register()
         return true
     }
 
@@ -44,6 +45,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         Task { @MainActor in
             NotificationRouter.handle(action: action, category: category, uid: uid, text: text,
                                       med: med, slot: slot, day: day, pack: pack)
+            // A button pressed on a notification may run us in the background only briefly:
+            // renew the schedule before telling iOS we're done.
+            if action != UNNotificationDefaultActionIdentifier {
+                await Scheduler.shared.rebuild()
+            }
             completionHandler()
         }
     }

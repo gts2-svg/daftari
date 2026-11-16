@@ -68,12 +68,12 @@ enum Agenda {
         }.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
     }
 
-    /// The nearest upcoming timed item (within two weeks).
+    /// The nearest upcoming item, however far away (iPhone calendar events: the next two months).
     static func next(after now: Date, entries: [Entry]) -> DayItem? {
-        let horizon = DF.addDays(14, to: now)
+        let horizon = DF.addDays(60, to: now)
         let ours = entries.filter { e in
-            guard e.isScheduledKind, e.isOpen, e.hasTime, let d = e.date else { return false }
-            return d > now && d < horizon
+            guard e.isScheduledKind, e.isOpen, let d = e.anchorDate else { return false }
+            return d > now
         }.map(DayItem.init(entry:))
         let events = CalendarService.shared.events(from: now, to: horizon)
             .filter { !$0.isAllDay && $0.startDate > now }

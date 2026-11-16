@@ -192,7 +192,7 @@ struct ThingsView: View {
         if meds.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 Text("أضف قطراتك وأدويتك").font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
-                Text("سجّل متى فتحت العلبة وكم تبقى صالحة، وأوقات الجرعات. يذكّرك بكل جرعة لين تضغط «أخذتها»، وينبهك قبل ما تنتهي العلبة.")
+                Text("سجّل متى فتحت العلبة وكم تبقى صالحة، وأوقات الجرعات. يذكّرك بكل جرعة، ومرة ثانية بعد ربع ساعة إذا ما سجّلتها، وينبهك قبل ما تنتهي العلبة.")
                     .font(.system(size: 14)).foregroundStyle(T.muted).lineSpacing(3)
                 Button {
                     AppState.shared.open(.medicine(nil))
@@ -505,7 +505,7 @@ struct MedicineSheet: View {
                             .background(T.field, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(T.track, lineWidth: 1.5))
                         Text(slots.isEmpty ? "بدون أوقات: يتابع الصلاحية فقط بدون تذكير بالجرعات."
-                                           : "يذكّرك بكل جرعة، ويرجع كل 15 دقيقة لين تضغط «أخذتها».")
+                                           : "يذكّرك بكل جرعة، ومرة ثانية بعد 15 دقيقة إذا ما ضغطت «أخذتها».")
                             .font(.system(size: 12)).foregroundStyle(T.muted)
                     }
 

@@ -3,16 +3,27 @@ import UserNotifications
 
 /// Builds every reminder from scratch whenever something changes:
 /// - عادي: one notification at the time
-/// - مهم: the day before, then at the time, repeating every 30 minutes until «تم»
-/// - ضروري: a week before, the day before, at the time (repeating), plus a real alarm
-/// - every day: the 8:00 morning brief and the 8:00 pm «وش صار اليوم؟» with a follow-up
+/// - مهم: the day before, then at the time, repeated 5 times every 30 minutes
+/// - ضروري: a week before, the day before, at the time (repeated 4 times every 15 minutes), plus a real alarm
+/// - every day: the morning brief and «وش صار اليوم؟» with a follow-up
+///
+/// iOS keeps at most 64 pending notifications per app, and only runs our code when the app is
+/// opened, a notification button is pressed, or a background refresh is granted. So the budget is
+/// filled by priority (each dated item's own alert first), and the last slot always holds a note
+/// asking to open the app before the scheduled window runs out.
 @MainActor
 final class Scheduler {
     static let shared = Scheduler()
     private var pending: Task<Void, Never>?
+    private var running: Task<Void, Never>?
 
-    /// iOS keeps at most 64 pending notifications per app.
-    private let limit = 62
+    /// iOS keeps at most 64 pending notifications per app; one is kept for the «افتح دفتري» note.
+    private let limit = 63
+
+    /// What the last rebuild could and couldn't fit (shown in Settings › فحص التنبيهات).
+    private(set) var lastScheduled = 0
+    private(set) var lastDropped = 0
+    private(set) var lastHorizon: Date?
 
     func rebuildSoon() {
         pending?.cancel()
@@ -23,43 +34,108 @@ final class Scheduler {
         }
     }
 
+    /// Runs one rebuild at a time, so two quick rebuilds can't interleave and double the alarms.
     func rebuild() async {
+        let previous = running
+        let task = Task { @MainActor in
+            await previous?.value
+            await self.rebuildNow()
+        }
+        running = task
+        await task.value
+    }
+
+    private enum Tier: Int { case own = 0, soon = 1, rest = 2 }
+
+    private func rebuildNow() async {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
         let now = Date()
         let entries = Store.allEntries()
         let open = entries.filter { $0.isScheduledKind && $0.isOpen && $0.date != nil }
+        let meds = Store.allMedicines()
 
-        var itemRequests: [(Date, UNNotificationRequest)] = []
-        for e in open { itemRequests += requests(for: e, now: now) }
-        itemRequests += nagRequests(entries: entries, now: now)
-        itemRequests += packRequests(Store.allPackLists(), now: now)
-        itemRequests.sort { $0.0 < $1.0 }
+        var all: [(Date, Tier, UNNotificationRequest)] = []
+        for e in open { all += requests(for: e, now: now) }
+        all += nagRequests(entries: entries, now: now).map { ($0.0, Tier.rest, $0.1) }
+        all += packRequests(Store.allPackLists(), now: now).map { ($0.0, Tier.soon, $0.1) }
+        all += medicineRequests(meds, now: now)
+        all += dailyRequests(entries: entries, now: now)
 
-        let daily = dailyRequests(entries: entries, now: now)
-        var medRequests = medicineRequests(Store.allMedicines(), now: now)
-        medRequests.sort { $0.0 < $1.0 }
-        let meds = Array(medRequests.prefix(max(0, limit - daily.count - 8)))
-        let budget = max(0, limit - daily.count - meds.count)
-        for (_, r) in itemRequests.prefix(budget) { try? await center.add(r) }
-        for (_, r) in meds { try? await center.add(r) }
-        for (_, r) in daily { try? await center.add(r) }
+        // Priority first, then time: every item's own alert and the next 24 hours never get crowded out.
+        all.sort { a, b in a.1 != b.1 ? a.1.rawValue < b.1.rawValue : a.0 < b.0 }
+        let kept = Array(all.prefix(limit))
+        let dropped = all.dropFirst(limit)
+        for (_, _, r) in kept { try? await center.add(r) }
 
+        // The window ends at the first thing we couldn't fit, or at the last thing scheduled.
+        let firstDropped = dropped.map { $0.0 }.min()
+        let lastKept = kept.map { $0.0 }.max()
+        var horizon = firstDropped ?? lastKept ?? DF.addDays(3, to: now)
+        horizon = min(horizon, DF.addDays(7, to: now))
+        lastScheduled = kept.count
+        lastDropped = dropped.count
+        lastHorizon = horizon
+        if let note = DF.greg.date(bySettingHour: 21, minute: 0, second: 0, of: DF.addDays(-1, to: horizon)), note > now {
+            try? await center.add(NotificationFactory.request(
+                id: "keepalive", at: note, title: "افتح دفتري دقيقة",
+                body: "عشان تستمر تذكيراتك وأدويتك في الأيام الجاية.",
+                sensitive: true, category: "MORNING", uid: nil))
+        }
+
+        await clearStaleDelivered(entries: entries, meds: meds)
         await AlarmService.rebuild(entries: open, now: now)
+        BackgroundRefresh.schedule()
+    }
+
+    /// Removes delivered notifications that no longer matter: done items, taken doses.
+    private func clearStaleDelivered(entries: [Entry], meds: [Medicine]) async {
+        let center = UNUserNotificationCenter.current()
+        let delivered = await center.deliveredNotifications()
+        let openIDs = Set(entries.filter { $0.isOpen }.map { $0.uid.uuidString })
+        let medByID = Dictionary(meds.map { ($0.uid.uuidString, $0) }, uniquingKeysWith: { a, _ in a })
+        var stale: [String] = []
+        for n in delivered {
+            let info = n.request.content.userInfo
+            if let uid = info["uid"] as? String, !openIDs.contains(uid) {
+                stale.append(n.request.identifier)
+            } else if let med = info["med"] as? String, let slot = info["slot"] as? Int, let day = info["day"] as? String {
+                if let m = medByID[med], m.takenKeys.contains("\(day)|\(slot)") { stale.append(n.request.identifier) }
+                if medByID[med] == nil { stale.append(n.request.identifier) }
+            }
+        }
+        if !stale.isEmpty { center.removeDeliveredNotifications(withIdentifiers: stale) }
+    }
+
+    /// For Settings › «فحص التنبيهات»: the next few alerts actually waiting in iOS.
+    func upcoming(_ n: Int = 5) async -> [(Date, String)] {
+        let reqs = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        let list: [(Date, String)] = reqs.compactMap { r in
+            guard let t = r.trigger as? UNCalendarNotificationTrigger, let d = t.nextTriggerDate() else { return nil }
+            return (d, r.content.title)
+        }
+        return Array(list.sorted { $0.0 < $1.0 }.prefix(n))
+    }
+
+    func pendingCount() async -> Int {
+        await UNUserNotificationCenter.current().pendingNotificationRequests().count
     }
 
     // MARK: - per item
 
-    private func requests(for e: Entry, now: Date) -> [(Date, UNNotificationRequest)] {
+    private func requests(for e: Entry, now: Date) -> [(Date, Tier, UNNotificationRequest)] {
         guard let anchor = e.anchorDate else { return [] }
-        var out: [(Date, UNNotificationRequest)] = []
+        var out: [(Date, Tier, UNNotificationRequest)] = []
         let uid = e.uid.uuidString
         let when = e.hasTime ? DF.time(anchor) : "اليوم"
 
         func add(_ key: String, _ at: Date, _ title: String, _ body: String, sensitive: Bool) {
             guard at > now else { return }
-            out.append((at, NotificationFactory.request(id: "\(uid)-\(key)", at: at, title: title, body: body,
-                                                        sensitive: sensitive, category: "ITEM", uid: uid)))
+            // The alert at the time (and a snooze) always fits; the extras come after.
+            let tier: Tier = (key == "at" || key == "r0" || key == "snooze") ? .own
+                : (at.timeIntervalSince(now) < 24 * 3600 ? .soon : .rest)
+            out.append((at, tier, NotificationFactory.request(id: "\(uid)-\(key)", at: at, title: title, body: body,
+                                                              sensitive: sensitive, category: "ITEM", uid: uid)))
         }
 
         let dayBefore = DF.greg.date(bySettingHour: 20, minute: 0, second: 0, of: DF.addDays(-1, to: anchor))
@@ -72,7 +148,7 @@ final class Scheduler {
             if let dayBefore { add("eve", dayBefore, "بكرة: \(e.title)", "مهم · \(when)", sensitive: true) }
             for k in 0..<5 {
                 let at = anchor.addingTimeInterval(TimeInterval(k * 30 * 60))
-                let body = k == 0 ? "مهم · \(when)" : "التذكير \(k + 1) — اضغط «تم» إذا خلصت"
+                let body = k == 0 ? "مهم · \(when)" : "التذكير \(k + 1) من 5 — اضغط «تم» إذا خلصت"
                 add("r\(k)", at, e.title, body, sensitive: true)
             }
         case .urgent:
@@ -82,7 +158,7 @@ final class Scheduler {
             if let dayBefore { add("eve", dayBefore, "بكرة: \(e.title)", "ضروري · \(when)", sensitive: true) }
             for k in 0..<4 {
                 let at = anchor.addingTimeInterval(TimeInterval(k * 15 * 60))
-                let body = k == 0 ? "ضروري · الآن" : "ما زال مفتوحاً — اضغط «تم» إذا خلصت"
+                let body = k == 0 ? "ضروري · الآن" : "ما زال مفتوحاً (\(k + 1) من 4) — اضغط «تم» إذا خلصت"
                 add("r\(k)", at, e.title, body, sensitive: true)
             }
         }
@@ -95,22 +171,23 @@ final class Scheduler {
 
     // MARK: - medicines
 
-    /// Dose alerts for the next 3 days (repeating every 15 minutes for the next 24 hours until «أخذتها»),
+    /// Dose alerts for up to 7 days (with one reminder 15 minutes later during the next 24 hours),
     /// plus a warning 3 days before the open pack expires and on the day itself.
-    private func medicineRequests(_ meds: [Medicine], now: Date) -> [(Date, UNNotificationRequest)] {
-        var out: [(Date, UNNotificationRequest)] = []
+    private func medicineRequests(_ meds: [Medicine], now: Date) -> [(Date, Tier, UNNotificationRequest)] {
+        var out: [(Date, Tier, UNNotificationRequest)] = []
         let today = DF.startOfDay(now)
 
         func add(_ id: String, _ at: Date, _ title: String, _ body: String, info: [String: Any], category: String) {
             guard at > now else { return }
-            out.append((at, NotificationFactory.request(id: id, at: at, title: title, body: body, sensitive: true,
-                                                        category: category, uid: nil, extra: info)))
+            let tier: Tier = at.timeIntervalSince(now) < 24 * 3600 ? .soon : .rest
+            out.append((at, tier, NotificationFactory.request(id: id, at: at, title: title, body: body, sensitive: true,
+                                                              category: category, uid: nil, extra: info)))
         }
 
         for m in meds {
             let uid = m.uid.uuidString
             let slots = m.slots
-            for offset in 0..<3 {
+            for offset in 0..<7 {
                 let day = DF.addDays(offset, to: today)
                 guard m.isActive(on: day) else { continue }
                 for (idx, slot) in slots.enumerated() where !m.taken(day, slot) {
@@ -120,7 +197,7 @@ final class Scheduler {
                     add("dose-\(uid)-\(DF.dayKey(day))-\(slot)-0", at, "\(m.name) — وقت الجرعة",
                         "\(note)الجرعة \(idx + 1) من \(slots.count)", info: info, category: "DOSE")
                     if at.timeIntervalSince(now) < 24 * 3600 {
-                        for k in 1...2 {
+                        for k in 1...1 {
                             add("dose-\(uid)-\(DF.dayKey(day))-\(slot)-\(k)", at.addingTimeInterval(TimeInterval(k * 15 * 60)),
                                 "\(m.name) — ما سجّلت الجرعة", "اضغط «أخذتها» إذا أخذتها", info: info, category: "DOSE")
                         }
@@ -197,18 +274,19 @@ final class Scheduler {
 
     // MARK: - morning and evening
 
-    private func dailyRequests(entries: [Entry], now: Date) -> [(Date, UNNotificationRequest)] {
-        var out: [(Date, UNNotificationRequest)] = []
+    private func dailyRequests(entries: [Entry], now: Date) -> [(Date, Tier, UNNotificationRequest)] {
+        var out: [(Date, Tier, UNNotificationRequest)] = []
+        func tier(_ d: Date) -> Tier { d.timeIntervalSince(now) < 36 * 3600 ? .soon : .rest }
         let today = DF.startOfDay(now)
         let morning = Prefs.morningMinutes
         let evening = Prefs.eveningMinutes
         let loggedToday = Prefs.lastEveningLog == DF.dayKey(now)
 
-        for i in 0..<4 {
+        for i in 0..<7 {
             let day = DF.addDays(i, to: today)
             let m = day.addingTimeInterval(TimeInterval(morning * 60))
             if m > now {
-                out.append((m, NotificationFactory.request(
+                out.append((m, tier(m), NotificationFactory.request(
                     id: "morning-\(i)", at: m,
                     title: "\(DF.greeting(m)) · \(DF.weekday(m))",
                     body: morningBody(day: day, entries: entries),
@@ -216,14 +294,14 @@ final class Scheduler {
             }
             let ev = day.addingTimeInterval(TimeInterval(evening * 60))
             if ev > now && !(i == 0 && loggedToday) {
-                out.append((ev, NotificationFactory.request(
+                out.append((ev, tier(ev), NotificationFactory.request(
                     id: "evening-\(i)", at: ev, title: "وش صار اليوم؟",
                     body: "علّم على اللي صار، أو اكتب هنا مباشرة.",
                     sensitive: true, category: "EVENING", uid: nil)))
             }
             let follow = ev.addingTimeInterval(90 * 60)
             if follow > now && !(i == 0 && loggedToday) {
-                out.append((follow, NotificationFactory.request(
+                out.append((follow, tier(follow), NotificationFactory.request(
                     id: "evening-follow-\(i)", at: follow, title: "ما سجّلت يومك",
                     body: "دقيقة وحدة: وش صار اليوم؟",
                     sensitive: true, category: "EVENING", uid: nil)))
@@ -276,7 +354,7 @@ enum NotificationFactory {
     }
 
     static func registerCategories() {
-        let done = UNNotificationAction(identifier: "DONE", title: "تم", options: [])
+        let done = UNNotificationAction(identifier: "DONE", title: "تم", options: [.authenticationRequired])
         let snooze = UNNotificationAction(identifier: "SNOOZE30", title: "ذكّرني بعد 30 دقيقة", options: [])
         let item = UNNotificationCategory(identifier: "ITEM", actions: [done, snooze], intentIdentifiers: [], options: [])
         let log = UNTextInputNotificationAction(identifier: "LOG", title: "اكتب وش صار", options: [],
@@ -284,11 +362,11 @@ enum NotificationFactory {
         let open = UNNotificationAction(identifier: "OPEN", title: "افتح المراجعة", options: [.foreground])
         let evening = UNNotificationCategory(identifier: "EVENING", actions: [log, open], intentIdentifiers: [], options: [])
         let morning = UNNotificationCategory(identifier: "MORNING", actions: [], intentIdentifiers: [], options: [])
-        let taken = UNNotificationAction(identifier: "TAKEN", title: "أخذتها", options: [])
+        let taken = UNNotificationAction(identifier: "TAKEN", title: "أخذتها", options: [.authenticationRequired])
         let snooze15 = UNNotificationAction(identifier: "SNOOZE15", title: "بعد 15 دقيقة", options: [])
         let dose = UNNotificationCategory(identifier: "DOSE", actions: [taken, snooze15], intentIdentifiers: [], options: [])
         let med = UNNotificationCategory(identifier: "MED", actions: [], intentIdentifiers: [], options: [])
-        let notToday = UNNotificationAction(identifier: "NOTTODAY", title: "مو اليوم", options: [])
+        let notToday = UNNotificationAction(identifier: "NOTTODAY", title: "مو اليوم", options: [.authenticationRequired])
         let nag = UNNotificationCategory(identifier: "NAG", actions: [done, notToday], intentIdentifiers: [], options: [])
         let pack = UNNotificationCategory(identifier: "PACK", actions: [], intentIdentifiers: [], options: [])
         UNUserNotificationCenter.current().setNotificationCategories([item, evening, morning, dose, med, nag, pack])

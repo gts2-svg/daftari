@@ -25,6 +25,9 @@ struct RootView: View {
         .fullScreenCover(item: $state.cover) { route in
             coverContent(route).daftariEnvironment()
         }
+        .overlay {
+            if Store.openError != nil { StoreRecoveryView() }
+        }
         .task {
             #if DEBUG
             if Demo.isOn {
@@ -37,6 +40,7 @@ struct RootView: View {
         }
         .onChange(of: phase) { _, newPhase in
             if newPhase == .active {
+                BackupService.autoBackupIfDue()
                 Task {
                     await ReminderService.shared.sync()
                     Scheduler.shared.rebuildSoon()
@@ -76,6 +80,33 @@ struct RootView: View {
             UrgentView(uid: uid)
         default:
             EmptyView()
+        }
+    }
+}
+
+/// Shown instead of crashing when the saved data can't be opened.
+struct StoreRecoveryView: View {
+    var body: some View {
+        ZStack {
+            T.bg.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 16) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 40)).foregroundStyle(.orange)
+                Text("تعذّر فتح بياناتك").font(.title.bold())
+                Text("لا تحذف التطبيق. بياناتك ما زالت محفوظة في الجوال، لكن هذه النسخة ما قدرت تقرأها. احفظ ملفات البيانات تحت في «الملفات»، وأرسلها لي نسترجعها.")
+                    .font(.body)
+                if !Store.storeFiles.isEmpty {
+                    ShareLink(items: Store.storeFiles) {
+                        Label("احفظ ملفات البيانات", systemImage: "square.and.arrow.up")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity).padding()
+                            .background(T.accent, in: RoundedRectangle(cornerRadius: 14))
+                            .foregroundStyle(.white)
+                    }
+                }
+                Text(Store.openError ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(4)
+            }
+            .padding(24)
         }
     }
 }

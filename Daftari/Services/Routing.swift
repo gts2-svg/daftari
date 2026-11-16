@@ -133,6 +133,7 @@ enum EntryActions {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { return }
         Store.context.insert(Entry(title: t, kind: .journal))
+        Prefs.markEveningLogged()
         commit()
     }
 
