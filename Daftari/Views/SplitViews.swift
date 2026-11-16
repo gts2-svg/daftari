@@ -23,14 +23,14 @@ struct SplitTripsSection: View {
     var body: some View {
         if trips.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("قطة السفرة").font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                Text("قطة السفرة").font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                 Text("سجّل مصروف الطلعة أول بأول مثل ما تكتبه في الملاحظات: «141 بنزين». يجمعها ويقسمها على عددكم، ويوريك وين راحت الفلوس، وتشاركها PDF أو رسالة.")
-                    .font(.system(size: 14)).foregroundStyle(T.muted).lineSpacing(3)
+                    .font(.dyn(14)).foregroundStyle(T.muted).lineSpacing(3)
                 Button {
                     onOpen(SplitActions.create())
                 } label: {
                     Text("قطة جديدة")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.dyn(15, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(SplitColors.ink, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -57,10 +57,10 @@ struct SplitCard: View {
         let cats = trip.byCategory
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(trip.displayName).font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                Text(trip.displayName).font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                 Text(verbatim: trip.expenses.isEmpty ? "ما فيها مصروف بعد"
                      : "\(SplitFormat.money(trip.total)) ر.س · على كل واحد \(SplitFormat.money(trip.share.rounded()))")
-                    .font(.system(size: 13)).foregroundStyle(T.muted)
+                    .font(.dyn(13)).foregroundStyle(T.muted)
                 if !cats.isEmpty {
                     SplitStripe(parts: cats.map { ($0.category.color, $0.amount) })
                         .frame(height: 6)
@@ -68,7 +68,7 @@ struct SplitCard: View {
                 }
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.backward").font(.system(size: 14, weight: .semibold)).foregroundStyle(T.muted)
+            Image(systemName: "chevron.backward").font(.dyn(14, weight: .semibold)).foregroundStyle(T.muted)
         }
         .padding(16)
         .card(radius: 22)
@@ -191,7 +191,7 @@ struct SplitTripDetail: View {
                     get: { trip.name },
                     set: { trip.name = $0; SplitActions.commit() }
                 ))
-                .font(.system(size: 24, weight: .bold))
+                .font(.dyn(24, weight: .bold))
                 .focused($nameFocused)
                 .submitLabel(.done)
                 Button { pickDate = true } label: {
@@ -200,7 +200,7 @@ struct SplitTripDetail: View {
                         Text(verbatim: "\(DF.hijriText(trip.tripDate)) · \(DF.gregText(trip.tripDate))")
                             .lineLimit(1).minimumScaleFactor(0.8)
                     }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.dyn(13, weight: .semibold))
                     .foregroundStyle(SplitColors.ink)
                     .padding(.horizontal, 12)
                     .frame(minHeight: 34)
@@ -228,7 +228,7 @@ struct SplitTripDetail: View {
 
             Button(role: .destructive) { confirmDelete = true } label: {
                 Label("احذف القطة", systemImage: "trash")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.dyn(15, weight: .semibold))
                     .foregroundStyle(T.urgentInk)
                     .frame(maxWidth: .infinity, minHeight: 48)
                     .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -242,7 +242,7 @@ struct SplitTripDetail: View {
 
     private func setupCard(_ trip: SplitTrip) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("مين يدفع؟").font(.system(size: 16, weight: .bold)).foregroundStyle(T.ink)
+            Text("مين يدفع؟").font(.dyn(16, weight: .bold)).foregroundStyle(T.ink)
             HStack(spacing: 10) {
                 modeOption(trip, .iPay, title: "أنا أدفع", sub: "وبعدين أقسم", icon: "person.fill")
                 modeOption(trip, .everyone, title: "كل واحد يدفع", sub: "ويطلع مين يحوّل لمين", icon: "person.3.fill")
@@ -251,12 +251,12 @@ struct SplitTripDetail: View {
             Divider().overlay(T.line)
 
             HStack {
-                Text("عدد الأشخاص").font(.system(size: 15, weight: .semibold)).foregroundStyle(T.ink)
+                Text("عدد الأشخاص").font(.dyn(15, weight: .semibold)).foregroundStyle(T.ink)
                 Spacer()
                 HStack(spacing: 0) {
                     stepButton("minus", enabled: trip.count > 1) { trip.setCount(trip.count - 1); SplitActions.commit() }
                     Text(verbatim: "\(trip.count)")
-                        .font(.system(size: 20, weight: .bold)).monospacedDigit()
+                        .font(.dyn(20, weight: .bold)).monospacedDigit()
                         .frame(minWidth: 44)
                     stepButton("plus", enabled: trip.count < 40) { trip.setCount(trip.count + 1); SplitActions.commit() }
                 }
@@ -269,7 +269,7 @@ struct SplitTripDetail: View {
                             get: { p.name },
                             set: { trip.rename(p.id, $0); SplitActions.commit() }
                         ))
-                        .font(.system(size: 15))
+                        .font(.dyn(15))
                         .padding(.horizontal, 12)
                         .frame(minHeight: 44)
                         .background(T.field, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -278,7 +278,7 @@ struct SplitTripDetail: View {
             } else {
                 Button { showNames = true } label: {
                     Label("أضف أسماءهم (اختياري) عشان تعلّم مين حوّل", systemImage: "person.badge.plus")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.dyn(13, weight: .semibold))
                         .foregroundStyle(SplitColors.ink)
                 }
                 .buttonStyle(.plain)
@@ -295,9 +295,9 @@ struct SplitTripDetail: View {
             SplitActions.commit()
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Image(systemName: icon).font(.system(size: 18, weight: .semibold))
-                Text(title).font(.system(size: 15, weight: .bold))
-                Text(sub).font(.system(size: 12)).opacity(0.8)
+                Image(systemName: icon).font(.dyn(18, weight: .semibold))
+                Text(title).font(.dyn(15, weight: .bold))
+                Text(sub).font(.dyn(12)).opacity(0.8)
             }
             .foregroundStyle(on ? .white : T.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -310,7 +310,7 @@ struct SplitTripDetail: View {
     private func stepButton(_ icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 15, weight: .bold))
+                .font(.dyn(15, weight: .bold))
                 .foregroundStyle(enabled ? SplitColors.ink : T.track)
                 .frame(width: 44, height: 40)
                 .background(SplitColors.soft.opacity(enabled ? 1 : 0.4), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -330,26 +330,26 @@ struct SplitTripDetail: View {
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("المجموع").font(.system(size: 13)).foregroundStyle(.white.opacity(0.8))
+                    Text("المجموع").font(.dyn(13)).foregroundStyle(.white.opacity(0.8))
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(verbatim: SplitFormat.money(trip.total))
-                            .font(.system(size: 34, weight: .bold)).monospacedDigit()
+                            .font(.dyn(34, weight: .bold)).monospacedDigit()
                             .lineLimit(1).minimumScaleFactor(0.5)
-                        Text("ر.س").font(.system(size: 15, weight: .semibold))
+                        Text("ر.س").font(.dyn(15, weight: .semibold))
                     }
                     Text(verbatim: "\(trip.expenses.count) مصروف" + (stops.isEmpty ? "" : " · \(stops.count) محطات"))
-                        .font(.system(size: 12)).foregroundStyle(.white.opacity(0.8))
+                        .font(.dyn(12)).foregroundStyle(.white.opacity(0.8))
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("على كل واحد").font(.system(size: 13)).foregroundStyle(.white.opacity(0.8))
+                    Text("على كل واحد").font(.dyn(13)).foregroundStyle(.white.opacity(0.8))
                     Text(verbatim: SplitFormat.money(rounded))
-                        .font(.system(size: 28, weight: .bold)).monospacedDigit()
+                        .font(.dyn(28, weight: .bold)).monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.5)
                     Text(verbatim: abs(exact - rounded) > 0.009
                          ? "\(trip.count) أشخاص · بالضبط \(SplitFormat.money(exact))"
                          : "\(trip.count) أشخاص")
-                        .font(.system(size: 12)).foregroundStyle(.white.opacity(0.8))
+                        .font(.dyn(12)).foregroundStyle(.white.opacity(0.8))
                 }
             }
             .foregroundStyle(.white)
@@ -361,7 +361,7 @@ struct SplitTripDetail: View {
 
             if !cats.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("في إيش انصرف").font(.system(size: 15, weight: .bold)).foregroundStyle(T.ink)
+                    Text("في إيش انصرف").font(.dyn(15, weight: .bold)).foregroundStyle(T.ink)
                     HStack(spacing: 16) {
                         Chart(cats) { c in
                             SectorMark(angle: .value("المبلغ", c.amount), innerRadius: .ratio(0.62), angularInset: 1.5)
@@ -372,20 +372,20 @@ struct SplitTripDetail: View {
                         .frame(width: 112, height: 112)
                         .overlay {
                             VStack(spacing: 0) {
-                                Text(verbatim: "\(cats.count)").font(.system(size: 18, weight: .bold))
-                                Text("بنود").font(.system(size: 11)).foregroundStyle(T.muted)
+                                Text(verbatim: "\(cats.count)").font(.dyn(18, weight: .bold))
+                                Text("بنود").font(.dyn(11)).foregroundStyle(T.muted)
                             }
                         }
                         VStack(alignment: .leading, spacing: 7) {
                             ForEach(cats) { c in
                                 HStack(spacing: 7) {
                                     Circle().fill(c.category.color).frame(width: 9, height: 9)
-                                    Text(c.category.label).font(.system(size: 14)).foregroundStyle(T.ink)
+                                    Text(c.category.label).font(.dyn(14)).foregroundStyle(T.ink)
                                     Spacer(minLength: 4)
                                     Text(verbatim: SplitFormat.money(c.amount))
-                                        .font(.system(size: 14, weight: .semibold)).monospacedDigit()
+                                        .font(.dyn(14, weight: .semibold)).monospacedDigit()
                                     Text(verbatim: "\(Int((c.amount / max(trip.total, 0.01) * 100).rounded()))٪")
-                                        .font(.system(size: 11)).foregroundStyle(T.muted)
+                                        .font(.dyn(11)).foregroundStyle(T.muted)
                                         .frame(width: 32, alignment: .trailing)
                                 }
                             }
@@ -399,14 +399,14 @@ struct SplitTripDetail: View {
             if stops.count > 1 {
                 let top = stops.map(\.amount).max() ?? 1
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("حسب المحطة").font(.system(size: 15, weight: .bold)).foregroundStyle(T.ink)
+                    Text("حسب المحطة").font(.dyn(15, weight: .bold)).foregroundStyle(T.ink)
                     ForEach(stops) { s in
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text(s.stop).font(.system(size: 14)).foregroundStyle(T.ink)
+                                Text(s.stop).font(.dyn(14)).foregroundStyle(T.ink)
                                 Spacer()
                                 Text(verbatim: SplitFormat.money(s.amount))
-                                    .font(.system(size: 14, weight: .semibold)).monospacedDigit()
+                                    .font(.dyn(14, weight: .semibold)).monospacedDigit()
                             }
                             ProgressView(value: min(s.amount, top), total: max(top, 0.01))
                                 .tint(SplitColors.ink)
@@ -429,10 +429,10 @@ struct SplitTripDetail: View {
                 let done = others.filter(\.settled).count
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("التحصيل").font(.system(size: 15, weight: .bold)).foregroundStyle(T.ink)
+                        Text("التحصيل").font(.dyn(15, weight: .bold)).foregroundStyle(T.ink)
                         Spacer()
                         Text(verbatim: "حوّل \(done) من \(others.count)")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.dyn(13, weight: .semibold))
                             .foregroundStyle(done == others.count ? T.accent : T.muted)
                     }
                     VStack(spacing: 6) {
@@ -443,12 +443,12 @@ struct SplitTripDetail: View {
                             } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: p.settled ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 20))
-                                        .foregroundStyle(p.settled ? T.accent : T.track)
-                                    Text(trip.personName(p)).font(.system(size: 15, weight: .semibold)).foregroundStyle(T.ink)
+                                        .font(.dyn(20))
+                                        .foregroundStyle(p.settled ? T.accent : T.outline)
+                                    Text(trip.personName(p)).font(.dyn(15, weight: .semibold)).foregroundStyle(T.ink)
                                     Spacer()
                                     Text(p.settled ? "حوّل" : "باقي")
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.dyn(13, weight: .semibold))
                                         .foregroundStyle(p.settled ? T.accent : T.muted)
                                 }
                                 .padding(.horizontal, 12)
@@ -460,7 +460,7 @@ struct SplitTripDetail: View {
                         }
                     }
                     Text(verbatim: "كل واحد عليه \(SplitFormat.money(trip.share.rounded())) ر.س. اضغط على اسمه إذا حوّل. هذا القسم ما يطلع في المشاركة.")
-                        .font(.system(size: 12)).foregroundStyle(T.muted)
+                        .font(.dyn(12)).foregroundStyle(T.muted)
                 }
                 .padding(16)
                 .card(radius: 20)
@@ -468,18 +468,18 @@ struct SplitTripDetail: View {
         } else {
             let moves = trip.transfers
             VStack(alignment: .leading, spacing: 10) {
-                Text("التسوية").font(.system(size: 15, weight: .bold)).foregroundStyle(T.ink)
+                Text("التسوية").font(.dyn(15, weight: .bold)).foregroundStyle(T.ink)
                 if moves.isEmpty {
-                    Text("متساوين، ما على أحد شيء.").font(.system(size: 14)).foregroundStyle(T.muted)
+                    Text("متساوين، ما على أحد شيء.").font(.dyn(14)).foregroundStyle(T.muted)
                 } else {
                     ForEach(Array(moves.enumerated()), id: \.offset) { _, m in
                         HStack(spacing: 8) {
-                            Text(trip.personName(m.from)).font(.system(size: 15, weight: .semibold))
-                            Image(systemName: "arrow.left").font(.system(size: 12, weight: .bold)).foregroundStyle(T.muted)
-                            Text(trip.personName(m.to)).font(.system(size: 15, weight: .semibold))
+                            Text(trip.personName(m.from)).font(.dyn(15, weight: .semibold))
+                            Image(systemName: "arrow.left").font(.dyn(12, weight: .bold)).foregroundStyle(T.muted)
+                            Text(trip.personName(m.to)).font(.dyn(15, weight: .semibold))
                             Spacer()
                             Text(verbatim: "\(SplitFormat.money(m.amount.rounded())) ر.س")
-                                .font(.system(size: 15, weight: .bold)).monospacedDigit()
+                                .font(.dyn(15, weight: .bold)).monospacedDigit()
                                 .foregroundStyle(SplitColors.ink)
                         }
                         .foregroundStyle(T.ink)
@@ -491,7 +491,7 @@ struct SplitTripDetail: View {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(trip.people) { p in
                         Text(verbatim: "\(trip.personName(p)) دفع \(SplitFormat.money(trip.paid(by: p.id)))")
-                            .font(.system(size: 12)).foregroundStyle(T.muted)
+                            .font(.dyn(12)).foregroundStyle(T.muted)
                     }
                 }
             }
@@ -508,7 +508,7 @@ struct SplitTripDetail: View {
             HStack(alignment: .top, spacing: 8) {
                 TextField("141 بنزين — أو الصق ملاحظتك", text: $newText, axis: .vertical)
                     .lineLimit(1...10)
-                    .font(.system(size: 16))
+                    .font(.dyn(16))
                     .padding(12)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(T.track, lineWidth: 1.5))
@@ -518,7 +518,7 @@ struct SplitTripDetail: View {
                     }
                 } label: {
                     Text(currency.symbol)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.dyn(15, weight: .bold))
                         .foregroundStyle(currency == .sar ? T.muted : SplitColors.ink)
                         .frame(width: 48, height: 48)
                         .background(currency == .sar ? T.field : SplitColors.soft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -530,7 +530,7 @@ struct SplitTripDetail: View {
                     newText = ""
                 } label: {
                     Text("أضف")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.dyn(15, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 60, height: 48)
                         .background(empty ? T.track : SplitColors.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -550,7 +550,7 @@ struct SplitTripDetail: View {
                     }
                 } label: {
                     Label(trip.currentStop.isEmpty ? "المحطة: —" : "المحطة: \(trip.currentStop)", systemImage: "mappin.and.ellipse")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.dyn(13, weight: .semibold))
                         .foregroundStyle(SplitColors.ink)
                         .padding(.horizontal, 10)
                         .frame(minHeight: 34)
@@ -562,12 +562,12 @@ struct SplitTripDetail: View {
             if trip.mode == .everyone {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
-                        Text("دفع:").font(.system(size: 13)).foregroundStyle(T.muted)
+                        Text("دفع:").font(.dyn(13)).foregroundStyle(T.muted)
                         ForEach(trip.people) { p in
                             let on = (payer ?? trip.me.id) == p.id
                             Button { payer = p.id } label: {
                                 Text(trip.personName(p))
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.dyn(13, weight: .semibold))
                                     .foregroundStyle(on ? .white : T.ink)
                                     .padding(.horizontal, 12)
                                     .frame(minHeight: 34)
@@ -580,7 +580,7 @@ struct SplitTripDetail: View {
             }
 
             Text("اكتب المبلغ والبند بأي ترتيب. سطر بدون مبلغ مثل «أملج:» يبدأ محطة. المبلغ بالريال إلا إذا اخترت عملة أو كتبت «50 يورو».")
-                .font(.system(size: 12)).foregroundStyle(T.muted)
+                .font(.dyn(12)).foregroundStyle(T.muted)
         }
     }
 
@@ -593,10 +593,10 @@ struct SplitTripDetail: View {
                     if !(group.stop.isEmpty && trip.stops.count == 1) {
                         HStack {
                             Text(group.stop.isEmpty ? "بدون محطة" : group.stop)
-                                .font(.system(size: 14, weight: .bold)).foregroundStyle(T.muted)
+                                .font(.dyn(14, weight: .bold)).foregroundStyle(T.muted)
                             Spacer()
                             Text(verbatim: SplitFormat.money(group.amount))
-                                .font(.system(size: 13, weight: .semibold)).monospacedDigit().foregroundStyle(T.muted)
+                                .font(.dyn(13, weight: .semibold)).monospacedDigit().foregroundStyle(T.muted)
                         }
                         .padding(.horizontal, 6)
                     }
@@ -611,7 +611,7 @@ struct SplitTripDetail: View {
                 }
             }
             Text("اضغط على أي مصروف تعدّله أو تغيّر تصنيفه.")
-                .font(.system(size: 12)).foregroundStyle(T.muted)
+                .font(.dyn(12)).foregroundStyle(T.muted)
         }
     }
 
@@ -619,24 +619,24 @@ struct SplitTripDetail: View {
         Button { editing = e } label: {
             HStack(spacing: 12) {
                 Image(systemName: e.category.icon)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.dyn(15, weight: .semibold))
                     .foregroundStyle(e.category.color)
                     .frame(width: 38, height: 38)
                     .background(e.category.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(e.note).font(.system(size: 15)).foregroundStyle(T.ink).lineLimit(1)
+                    Text(e.note).font(.dyn(15)).foregroundStyle(T.ink).lineLimit(1)
                     if trip.mode == .everyone {
                         Text(verbatim: "دفع \(trip.personName(trip.person(e.payer)))")
-                            .font(.system(size: 12)).foregroundStyle(T.muted)
+                            .font(.dyn(12)).foregroundStyle(T.muted)
                     }
                 }
                 Spacer(minLength: 4)
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(verbatim: SplitFormat.amount(e))
-                        .font(.system(size: 15, weight: .semibold)).monospacedDigit().foregroundStyle(T.ink)
+                        .font(.dyn(15, weight: .semibold)).monospacedDigit().foregroundStyle(T.ink)
                     if e.currency != .sar {
                         Text(verbatim: "≈ \(SplitFormat.money(trip.riyals(e))) ر.س")
-                            .font(.system(size: 11)).foregroundStyle(T.muted)
+                            .font(.dyn(11)).foregroundStyle(T.muted)
                     }
                 }
             }
@@ -662,7 +662,7 @@ struct SplitTripDetail: View {
                 pdf = SplitPDF.make(trip).map(SharedFile.init)
             } label: {
                 Label("PDF", systemImage: "doc.richtext")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.dyn(15, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .background(SplitColors.ink, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -670,7 +670,7 @@ struct SplitTripDetail: View {
             .buttonStyle(.plain)
             ShareLink(item: trip.summaryText) {
                 Label("رسالة للقروب", systemImage: "text.bubble")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.dyn(15, weight: .bold))
                     .foregroundStyle(SplitColors.ink)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .background(SplitColors.soft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -683,10 +683,10 @@ struct SplitTripDetail: View {
 
     private func ratesCard(_ trip: SplitTrip) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("سعر الصرف بالريال").font(.system(size: 15, weight: .bold)).foregroundStyle(T.ink)
+            Text("سعر الصرف بالريال").font(.dyn(15, weight: .bold)).foregroundStyle(T.ink)
             ForEach(SplitCurrency.allCases.filter { $0 != .sar }) { c in
                 HStack {
-                    Text(verbatim: "1 \(c.name) \(c.symbol) =").font(.system(size: 14)).foregroundStyle(T.ink)
+                    Text(verbatim: "1 \(c.name) \(c.symbol) =").font(.dyn(14)).foregroundStyle(T.ink)
                     Spacer()
                     TextField("", value: Binding(
                         get: { trip.rate(c) },
@@ -699,14 +699,14 @@ struct SplitTripDetail: View {
                     ), format: .number.precision(.fractionLength(0...4)).locale(Locale(identifier: "en_US_POSIX")))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
-                    .font(.system(size: 15, weight: .semibold)).monospacedDigit()
+                    .font(.dyn(15, weight: .semibold)).monospacedDigit()
                     .frame(width: 90, height: 38)
                     .background(T.field, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    Text("ر.س").font(.system(size: 13)).foregroundStyle(T.muted)
+                    Text("ر.س").font(.dyn(13)).foregroundStyle(T.muted)
                 }
             }
             Text("عدّل السعر حسب اللي صرفت فيه، والمجموع يتحدث.")
-                .font(.system(size: 12)).foregroundStyle(T.muted)
+                .font(.dyn(12)).foregroundStyle(T.muted)
         }
         .padding(16)
         .card(radius: 20)
@@ -728,7 +728,7 @@ struct SplitExpenseSheet: View {
                     HStack(spacing: 8) {
                         TextField("المبلغ", text: $amountText)
                             .keyboardType(.decimalPad)
-                            .font(.system(size: 30, weight: .bold)).monospacedDigit()
+                            .font(.dyn(30, weight: .bold)).monospacedDigit()
                         Picker("العملة", selection: $expense.currency) {
                             ForEach(SplitCurrency.allCases) { c in Text("\(c.name) \(c.symbol)").tag(c) }
                         }
@@ -738,18 +738,18 @@ struct SplitExpenseSheet: View {
                     .card(radius: 18)
 
                     TextField("على إيش؟", text: $expense.note)
-                        .font(.system(size: 17))
+                        .font(.dyn(17))
                         .padding(14)
                         .card(radius: 18)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("التصنيف").font(.system(size: 14, weight: .bold)).foregroundStyle(T.muted)
+                        Text("التصنيف").font(.dyn(14, weight: .bold)).foregroundStyle(T.muted)
                         FlowLayout(spacing: 8) {
                             ForEach(SplitCategory.allCases) { c in
                                 let on = expense.category == c
                                 Button { expense.category = c } label: {
                                     Label(c.label, systemImage: c.icon)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .font(.dyn(14, weight: .semibold))
                                         .foregroundStyle(on ? .white : c.color)
                                         .padding(.horizontal, 12)
                                         .frame(minHeight: 38)
@@ -761,9 +761,9 @@ struct SplitExpenseSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("المحطة").font(.system(size: 14, weight: .bold)).foregroundStyle(T.muted)
+                        Text("المحطة").font(.dyn(14, weight: .bold)).foregroundStyle(T.muted)
                         TextField("بدون محطة", text: $expense.stop)
-                            .font(.system(size: 16))
+                            .font(.dyn(16))
                             .padding(12)
                             .card(radius: 14)
                         if !trip.namedStops.isEmpty {
@@ -771,7 +771,7 @@ struct SplitExpenseSheet: View {
                                 ForEach(trip.namedStops, id: \.self) { s in
                                     Button { expense.stop = s } label: {
                                         Text(s)
-                                            .font(.system(size: 13, weight: .semibold))
+                                            .font(.dyn(13, weight: .semibold))
                                             .foregroundStyle(expense.stop == s ? .white : SplitColors.ink)
                                             .padding(.horizontal, 12)
                                             .frame(minHeight: 34)
@@ -785,13 +785,13 @@ struct SplitExpenseSheet: View {
 
                     if trip.mode == .everyone {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("مين دفع؟").font(.system(size: 14, weight: .bold)).foregroundStyle(T.muted)
+                            Text("مين دفع؟").font(.dyn(14, weight: .bold)).foregroundStyle(T.muted)
                             FlowLayout(spacing: 8) {
                                 ForEach(trip.people) { p in
                                     let on = (expense.payer ?? trip.me.id) == p.id
                                     Button { expense.payer = p.id } label: {
                                         Text(trip.personName(p))
-                                            .font(.system(size: 14, weight: .semibold))
+                                            .font(.dyn(14, weight: .semibold))
                                             .foregroundStyle(on ? .white : T.ink)
                                             .padding(.horizontal, 12)
                                             .frame(minHeight: 38)
@@ -809,7 +809,7 @@ struct SplitExpenseSheet: View {
                         dismiss()
                     } label: {
                         Label("احذف المصروف", systemImage: "trash")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.dyn(15, weight: .semibold))
                             .foregroundStyle(T.urgentInk)
                             .frame(maxWidth: .infinity, minHeight: 48)
                             .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -859,10 +859,10 @@ struct SplitReport: View {
 
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("قطة").font(.system(size: 13, weight: .semibold)).foregroundStyle(SplitColors.ink)
-                Text(trip.displayName).font(.system(size: 30, weight: .bold)).foregroundStyle(T.ink)
+                Text("قطة").font(.dyn(13, weight: .semibold)).foregroundStyle(SplitColors.ink)
+                Text(trip.displayName).font(.dyn(30, weight: .bold)).foregroundStyle(T.ink)
                 Text(verbatim: "\(DF.hijriText(trip.tripDate)) · \(DF.gregText(trip.tripDate))")
-                    .font(.system(size: 13)).foregroundStyle(T.muted)
+                    .font(.dyn(13)).foregroundStyle(T.muted)
             }
 
             HStack(spacing: 0) {
@@ -880,21 +880,21 @@ struct SplitReport: View {
 
             if !cats.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("في إيش انصرف").font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                    Text("في إيش انصرف").font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                     SplitStripe(parts: cats.map { ($0.category.color, $0.amount) }).frame(height: 10)
                     ForEach(cats) { c in
                         HStack(spacing: 10) {
                             Image(systemName: c.category.icon)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.dyn(13, weight: .semibold))
                                 .foregroundStyle(c.category.color)
                                 .frame(width: 30, height: 30)
                                 .background(c.category.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                            Text(c.category.label).font(.system(size: 15)).foregroundStyle(T.ink)
+                            Text(c.category.label).font(.dyn(15)).foregroundStyle(T.ink)
                             Spacer()
                             Text(verbatim: "\(Int((c.amount / max(trip.total, 0.01) * 100).rounded()))٪")
-                                .font(.system(size: 12)).foregroundStyle(T.muted)
+                                .font(.dyn(12)).foregroundStyle(T.muted)
                             Text(verbatim: SplitFormat.money(c.amount))
-                                .font(.system(size: 15, weight: .semibold)).monospacedDigit().foregroundStyle(T.ink)
+                                .font(.dyn(15, weight: .semibold)).monospacedDigit().foregroundStyle(T.ink)
                                 .frame(minWidth: 64, alignment: .trailing)
                         }
                     }
@@ -902,28 +902,28 @@ struct SplitReport: View {
             }
 
             VStack(alignment: .leading, spacing: 14) {
-                Text("التفاصيل").font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                Text("التفاصيل").font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                 ForEach(groups) { g in
                     VStack(alignment: .leading, spacing: 6) {
                         if !(g.stop.isEmpty && groups.count == 1) {
                             HStack {
                                 Text(g.stop.isEmpty ? "أخرى" : g.stop)
-                                    .font(.system(size: 14, weight: .bold)).foregroundStyle(SplitColors.ink)
+                                    .font(.dyn(14, weight: .bold)).foregroundStyle(SplitColors.ink)
                                 Spacer()
                                 Text(verbatim: SplitFormat.money(g.amount))
-                                    .font(.system(size: 13, weight: .semibold)).monospacedDigit().foregroundStyle(SplitColors.ink)
+                                    .font(.dyn(13, weight: .semibold)).monospacedDigit().foregroundStyle(SplitColors.ink)
                             }
                         }
                         ForEach(g.items) { e in
                             HStack(spacing: 8) {
                                 Circle().fill(e.category.color).frame(width: 7, height: 7)
-                                Text(e.note).font(.system(size: 14)).foregroundStyle(T.ink)
+                                Text(e.note).font(.dyn(14)).foregroundStyle(T.ink)
                                 Spacer()
                                 if e.currency != .sar {
-                                    Text(verbatim: SplitFormat.amount(e)).font(.system(size: 11)).foregroundStyle(T.muted)
+                                    Text(verbatim: SplitFormat.amount(e)).font(.dyn(11)).foregroundStyle(T.muted)
                                 }
                                 Text(verbatim: SplitFormat.money(trip.riyals(e)))
-                                    .font(.system(size: 14)).monospacedDigit().foregroundStyle(T.ink)
+                                    .font(.dyn(14)).monospacedDigit().foregroundStyle(T.ink)
                                     .frame(minWidth: 64, alignment: .trailing)
                             }
                         }
@@ -934,7 +934,7 @@ struct SplitReport: View {
             }
 
             Text("المبالغ بالريال السعودي · من دفتري")
-                .font(.system(size: 11)).foregroundStyle(T.muted)
+                .font(.dyn(11)).foregroundStyle(T.muted)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(36)
@@ -946,9 +946,9 @@ struct SplitReport: View {
 
     private func stat(_ title: String, _ value: String, unit: String, big: Bool) -> some View {
         VStack(spacing: 4) {
-            Text(title).font(.system(size: 13)).foregroundStyle(.white.opacity(0.8))
-            Text(verbatim: value).font(.system(size: big ? 30 : 26, weight: .bold)).monospacedDigit()
-            Text(unit).font(.system(size: 12)).foregroundStyle(.white.opacity(0.8))
+            Text(title).font(.dyn(13)).foregroundStyle(.white.opacity(0.8))
+            Text(verbatim: value).font(.dyn(big ? 30 : 26, weight: .bold)).monospacedDigit()
+            Text(unit).font(.dyn(12)).foregroundStyle(.white.opacity(0.8))
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)

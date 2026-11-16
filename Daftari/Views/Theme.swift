@@ -1,5 +1,14 @@
 import SwiftUI
 
+extension Font {
+    /// A system font that follows the phone's text size setting (Settings › Display › Text Size),
+    /// capped so very large settings don't break the layout.
+    static func dyn(_ size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        let scaled = UIFontMetrics(forTextStyle: .body).scaledValue(for: size)
+        return .system(size: min(scaled, size * 1.6), weight: weight, design: design)
+    }
+}
+
 extension Color {
     init(hex: UInt32) {
         self.init(red: Double((hex >> 16) & 0xFF) / 255,
@@ -17,6 +26,8 @@ enum T {
     static let muted = Color(hex: 0x5E6866)
     static let line = Color(hex: 0xEDE7DA)
     static let track = Color(hex: 0xE3DCCB)
+    /// Outlines that must be seen (tick circles, choice borders): darker than `track`, ≥ 3:1 on white.
+    static let outline = Color(hex: 0x9C927E)
     static let accent = Color(hex: 0x1D6A63)
     static let accentSoft = Color(hex: 0xDCEBE7)
     static let accentDeep = Color(hex: 0x14524C)
@@ -62,7 +73,7 @@ struct ImportanceBadge: View {
     let importance: Importance
     var body: some View {
         Text(importance.label)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.dyn(12, weight: .semibold))
             .foregroundStyle(T.ink(importance))
             .padding(.horizontal, 9)
             .padding(.vertical, 3)
@@ -90,10 +101,10 @@ struct SectionTitle: View {
     var color: Color = T.ink
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title).font(.system(size: 17, weight: .bold)).foregroundStyle(color)
+            Text(title).font(.dyn(17, weight: .bold)).foregroundStyle(color)
             Spacer()
             if let trailing {
-                Text(trailing).font(.system(size: 13)).foregroundStyle(T.muted)
+                Text(trailing).font(.dyn(13)).foregroundStyle(T.muted)
             }
         }
     }
@@ -111,27 +122,27 @@ struct ItemRow: View {
                     EntryActions.toggleDone(e)
                 } label: {
                     Image(systemName: e.isDone ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 24))
-                        .foregroundStyle(e.isDone ? T.accent : T.track)
+                        .font(.dyn(24))
+                        .foregroundStyle(e.isDone ? T.accent : T.outline)
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(e.isDone ? "منجز، اضغط للتراجع" : "علّم كمنجز")
             } else {
                 Image(systemName: "calendar")
-                    .font(.system(size: 18))
+                    .font(.dyn(18))
                     .foregroundStyle(T.systemDot)
                     .frame(width: 44, height: 44)
                     .accessibilityHidden(true)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title)
-                    .font(.system(size: 15))
+                    .font(.dyn(15))
                     .strikethrough(item.isDone)
                     .foregroundStyle(item.isDone ? T.muted : T.ink)
                     .lineLimit(2)
                 Text(whenLine)
-                    .font(.system(size: 12))
+                    .font(.dyn(12))
                     .foregroundStyle(T.muted)
             }
             Spacer(minLength: 4)
@@ -205,7 +216,7 @@ struct KeyboardDone: ViewModifier {
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
                                                         to: nil, from: nil, for: nil)
                     }
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.dyn(16, weight: .bold))
                 }
             }
     }
@@ -226,10 +237,10 @@ struct AlarmOffBanner: View {
             }
         } label: {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "alarm.waves.left.and.right").font(.system(size: 18, weight: .bold))
+                Image(systemName: "alarm.waves.left.and.right").font(.dyn(18, weight: .bold))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("المنبّه الحقيقي مقفل").font(.system(size: 16, weight: .bold))
-                    Text("بدونه ما يرن الضروري والجوال صامت. اضغط هنا وفعّله.").font(.system(size: 14))
+                    Text("المنبّه الحقيقي مقفل").font(.dyn(16, weight: .bold))
+                    Text("بدونه ما يرن الضروري والجوال صامت. اضغط هنا وفعّله.").font(.dyn(14))
                 }
                 Spacer(minLength: 0)
             }

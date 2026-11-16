@@ -91,7 +91,7 @@ struct StoreRecoveryView: View {
             T.bg.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 16) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 40)).foregroundStyle(.orange)
+                    .font(.dyn(40)).foregroundStyle(.orange)
                 Text("تعذّر فتح بياناتك").font(.title.bold())
                 Text("لا تحذف التطبيق. بياناتك ما زالت محفوظة في الجوال، لكن هذه النسخة ما قدرت تقرأها. احفظ ملفات البيانات تحت في «الملفات»، وأرسلها لي نسترجعها.")
                     .font(.body)

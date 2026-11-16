@@ -35,7 +35,7 @@ struct CalendarScreen: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
                 Text(monthTitle)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.dyn(24, weight: .bold))
                     .foregroundStyle(T.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -44,13 +44,13 @@ struct CalendarScreen: View {
                 navButton("chevron.forward", label: "الشهر التالي", by: 1)
             }
             HStack {
-                Text(otherSpan).font(.system(size: 13)).foregroundStyle(T.muted)
+                Text(otherSpan).font(.dyn(13)).foregroundStyle(T.muted)
                 Spacer()
                 Button("ارجع لليوم") {
                     anchor = Date()
                     selected = Date()
                 }
-                .font(.system(size: 13, weight: .semibold))
+                .font(.dyn(13, weight: .semibold))
                 .foregroundStyle(T.accent)
                 .frame(minHeight: 32)
             }
@@ -62,7 +62,7 @@ struct CalendarScreen: View {
             moveMonth(by: step)
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.dyn(17, weight: .semibold))
                 .foregroundStyle(T.ink)
                 .frame(width: 44, height: 44)
                 .card(radius: 14)
@@ -135,7 +135,7 @@ struct CalendarScreen: View {
         return VStack(spacing: 6) {
             LazyVGrid(columns: columns, spacing: 0) {
                 ForEach(DF.shortWeekdays, id: \.self) { name in
-                    Text(name).font(.system(size: 12)).foregroundStyle(T.muted).frame(maxWidth: .infinity)
+                    Text(name).font(.dyn(12)).foregroundStyle(T.muted).frame(maxWidth: .infinity)
                 }
             }
             LazyVGrid(columns: columns, spacing: 4) {
@@ -171,10 +171,10 @@ struct CalendarScreen: View {
         } label: {
             VStack(spacing: 1) {
                 Text(verbatim: "\(main)")
-                    .font(.system(size: 16, weight: isSelected || isToday ? .bold : .semibold))
+                    .font(.dyn(16, weight: isSelected || isToday ? .bold : .semibold))
                     .monospacedDigit()
                 Text(verbatim: "\(sub)")
-                    .font(.system(size: 10))
+                    .font(.dyn(10))
                     .foregroundStyle(isSelected ? Color.white.opacity(0.85) : T.muted)
                 Circle()
                     .fill(dotColor.map { isSelected ? Color.white : $0 } ?? Color.clear)
@@ -203,15 +203,15 @@ struct CalendarScreen: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: "\(DF.weekday(selected)) \(DF.dayMonth(selected, cal: cal, year: false))")
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(T.ink)
-                    Text(DF.dayMonth(selected, cal: other)).font(.system(size: 12)).foregroundStyle(T.muted)
+                        .font(.dyn(16, weight: .bold)).foregroundStyle(T.ink)
+                    Text(DF.dayMonth(selected, cal: other)).font(.dyn(12)).foregroundStyle(T.muted)
                 }
                 Spacer()
                 Button {
                     AppState.shared.open(.add(prefill: "", date: DF.startOfDay(selected), kind: nil))
                 } label: {
                     Label("أضف", systemImage: "plus")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.dyn(14, weight: .semibold))
                         .foregroundStyle(T.accent)
                         .frame(height: 44)
                         .padding(.horizontal, 14)
@@ -220,7 +220,7 @@ struct CalendarScreen: View {
             }
             if items.isEmpty {
                 Text("ما فيه شيء في هذا اليوم.")
-                    .font(.system(size: 14)).foregroundStyle(T.muted)
+                    .font(.dyn(14)).foregroundStyle(T.muted)
                     .padding(.vertical, 8)
             } else {
                 ItemList(items: items)

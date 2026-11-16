@@ -5,14 +5,14 @@ import Foundation
 enum DF {
     static let greg: Calendar = {
         var c = Calendar(identifier: .gregorian)
-        c.timeZone = .current
+        c.timeZone = .autoupdatingCurrent
         c.locale = Locale(identifier: "ar")
         return c
     }()
 
     static let hijri: Calendar = {
         var c = Calendar(identifier: .islamicUmmAlQura)
-        c.timeZone = .current
+        c.timeZone = .autoupdatingCurrent
         c.locale = Locale(identifier: "ar")
         return c
     }()

@@ -7,6 +7,9 @@ struct TodayView: View {
     @Query(sort: \Medicine.createdAt) private var meds: [Medicine]
     @ObservedObject private var app = AppState.shared
     @State private var showTasks = false
+    @State private var showSearch = false
+    @AppStorage(Prefs.Key.evening) private var eveningMinutes = 20 * 60
+    @AppStorage(Prefs.Key.lastEveningLog) private var lastEveningLog = ""
 
     var body: some View {
         NavigationStack {
@@ -27,6 +30,7 @@ struct TodayView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showTasks) { TasksListView() }
+            .navigationDestination(isPresented: $showSearch) { SearchAllView() }
         }
     }
 
@@ -34,13 +38,18 @@ struct TodayView: View {
     private func content(now: Date) -> some View {
         let todayItems = Agenda.items(on: now, entries: entries)
         let overdue = Agenda.overdue(entries: entries, now: now)
+        let activeMeds = meds.filter { !$0.courseFinished }
+        let pending = entries.filter(\.isPending)
+        let needsAlarm = entries.contains { $0.isScheduledKind && $0.isOpen && $0.date != nil && $0.importance != .normal }
         VStack(alignment: .leading, spacing: 16) {
             header(now: now)
+            if needsAlarm && !AlarmService.isAuthorized { AlarmOffBanner() }
+            if showEveningPrompt(now: now) { eveningPrompt }
             NextCard(item: Agenda.next(after: now, entries: entries), now: now)
-            if meds.contains(where: { !$0.courseFinished }) {
-                MedsTodayCard(meds: meds.filter { !$0.courseFinished }, now: now)
+            if !activeMeds.isEmpty {
+                MedsTodayCard(meds: activeMeds, now: now)
             }
-            cards(now: now, todayItems: todayItems, overdue: overdue)
+            tasksLine(now: now)
 
             if !overdue.isEmpty {
                 SectionTitle(title: "متأخر", trailing: "\(overdue.count)", color: T.urgentInk)
@@ -51,8 +60,10 @@ struct TodayView: View {
             SectionTitle(title: "يومك", trailing: todayItems.isEmpty ? nil : "\(todayItems.filter { !$0.isDone }.count) باقي")
                 .padding(.top, 4)
             if todayItems.isEmpty {
-                Text("ما عندك شيء اليوم. اضغط + وأضف أي شيء ببالك، أو قله بصوتك من زر المايك.")
-                    .font(.system(size: 14))
+                Text(activeMeds.isEmpty && pending.isEmpty
+                     ? "ما عندك شيء اليوم. اضغط + وأضف أي شيء ببالك، أو قله بصوتك من زر المايك."
+                     : "ما عندك مواعيد ولا مهام اليوم.")
+                    .font(.dyn(14))
                     .foregroundStyle(T.muted)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
@@ -61,7 +72,6 @@ struct TodayView: View {
                 ItemList(items: todayItems)
             }
 
-            let pending = entries.filter(\.isPending)
             if !pending.isEmpty {
                 SectionTitle(title: "معلّقة", trailing: "\(pending.count)", color: T.taskInk)
                     .padding(.top, 4)
@@ -73,16 +83,26 @@ struct TodayView: View {
     private func header(now: Date) -> some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(DF.greeting(now)).font(.system(size: 15)).foregroundStyle(T.muted)
-                Text(DF.weekday(now)).font(.system(size: 32, weight: .bold)).foregroundStyle(T.ink)
-                Text(DF.fullDate(now)).font(.system(size: 15)).foregroundStyle(T.muted)
+                Text(DF.greeting(now)).font(.dyn(15)).foregroundStyle(T.muted)
+                Text(DF.weekday(now)).font(.dyn(32, weight: .bold)).foregroundStyle(T.ink)
+                Text(DF.fullDate(now)).font(.dyn(15)).foregroundStyle(T.muted)
             }
             Spacer()
+            Button {
+                showSearch = true
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.dyn(20, weight: .medium))
+                    .foregroundStyle(T.ink)
+                    .frame(width: 46, height: 46)
+                    .card(radius: 15)
+            }
+            .accessibilityLabel("ابحث")
             Button {
                 app.open(.settings)
             } label: {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.dyn(20, weight: .medium))
                     .foregroundStyle(T.ink)
                     .frame(width: 46, height: 46)
                     .card(radius: 15)
@@ -91,41 +111,49 @@ struct TodayView: View {
         }
     }
 
-    private func cards(now: Date, todayItems: [DayItem], overdue: [Entry]) -> some View {
-        let appointments = todayItems.filter { $0.isAppointment && !$0.isDone }
+    /// After the evening time, until today is logged: the «وش صار اليوم؟» card at the top.
+    private func showEveningPrompt(now: Date) -> Bool {
+        let minutes = DF.greg.component(.hour, from: now) * 60 + DF.greg.component(.minute, from: now)
+        return minutes >= eveningMinutes && lastEveningLog != DF.dayKey(now)
+    }
+
+    private var eveningPrompt: some View {
+        Button { app.open(.evening) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "moon.stars.fill").font(.dyn(20, weight: .semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("وش صار اليوم؟").font(.dyn(17, weight: .bold))
+                    Text("دقيقة وحدة: علّم على اللي صار أو قله بصوتك.").font(.dyn(14)).opacity(0.85)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.left").font(.dyn(14, weight: .bold))
+            }
+            .foregroundStyle(T.ideaInk)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(T.ideaSoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// One line instead of four cards: today's tasks (the tabs already lead to the rest).
+    @ViewBuilder
+    private func tasksLine(now: Date) -> some View {
         let tasks = entries.filter { e in
-            guard e.kind == .task, e.isOpen else { return false }
-            guard let d = e.date else { return false }
+            guard e.kind == .task, e.isOpen, let d = e.date else { return false }
             return d < DF.addDays(1, to: DF.startOfDay(now))
-        }.sorted { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }
-        let ideas = entries.filter { $0.kind == .idea }.sorted { $0.createdAt > $1.createdAt }
-
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-            Button { app.tab = 1 } label: {
-                HomeCard(title: "مواعيد", icon: "calendar", ink: T.accentDeep, soft: T.accentSoft,
-                         lines: appointments.prefix(2).map { i in
-                             if let d = i.date, i.hasTime { return "\(i.title)\n\(DF.time(d))" }
-                             return i.title
-                         },
-                         empty: "ما عندك مواعيد اليوم")
-            }
-            .buttonStyle(.plain)
-
+        }
+        if !tasks.isEmpty {
             Button { showTasks = true } label: {
-                HomeCard(title: tasks.isEmpty ? "مهام" : "مهام · \(tasks.count)", icon: "checklist", ink: T.taskInk, soft: T.taskSoft,
-                         lines: tasks.prefix(2).map { $0.title }, empty: "ما عليك مهام اليوم")
-            }
-            .buttonStyle(.plain)
-
-            Button { app.tab = 2 } label: {
-                HomeCard(title: ideas.isEmpty ? "الأفكار" : "الأفكار · \(ideas.count)", icon: "lightbulb", ink: T.ideaInk, soft: T.ideaSoft,
-                         lines: ideas.prefix(1).map { $0.title }, empty: "قل فكرتك بصوتك")
-            }
-            .buttonStyle(.plain)
-
-            Button { app.tab = 3 } label: {
-                HomeCard(title: "أشيائي", icon: "shippingbox", ink: T.ideaInk, soft: T.ideaSoft,
-                         lines: [], empty: "التجديدات والضمانات والصيانة — المرحلة الثانية")
+                HStack {
+                    Label("مهام اليوم: \(tasks.count)", systemImage: "checklist")
+                        .font(.dyn(15, weight: .semibold)).foregroundStyle(T.taskInk)
+                    Spacer()
+                    Text("كل المهام").font(.dyn(14)).foregroundStyle(T.muted)
+                    Image(systemName: "chevron.left").font(.dyn(12, weight: .bold)).foregroundStyle(T.muted)
+                }
+                .padding(14)
+                .card(radius: 16)
             }
             .buttonStyle(.plain)
         }
@@ -137,7 +165,7 @@ struct TodayView: View {
                 app.open(.voice(.idea))
             } label: {
                 Image(systemName: "mic.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.dyn(20, weight: .semibold))
                     .foregroundStyle(T.accent)
                     .frame(width: 52, height: 52)
                     .background(T.card, in: Circle())
@@ -149,7 +177,7 @@ struct TodayView: View {
                 app.open(.add(prefill: "", date: nil, kind: nil))
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.dyn(28, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 64, height: 64)
                     .background(T.ink, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -171,33 +199,33 @@ struct NextCard: View {
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 8) {
-                            Text("التالي").font(.system(size: 13, weight: .semibold)).opacity(0.9)
+                            Text("التالي").font(.dyn(13, weight: .semibold)).opacity(0.9)
                             if item.importance != .normal {
                                 Text(item.importance.label)
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.dyn(12, weight: .bold))
                                     .foregroundStyle(T.ink(item.importance))
                                     .padding(.horizontal, 10).padding(.vertical, 3)
                                     .background(.white, in: RoundedRectangle(cornerRadius: 10))
                             }
                         }
                         Text(item.title)
-                            .font(.system(size: 19, weight: .bold))
+                            .font(.dyn(19, weight: .bold))
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(DF.whenText(d, hasTime: item.hasTime, now: now))
-                            .font(.system(size: 14)).opacity(0.9)
+                            .font(.dyn(14)).opacity(0.9)
                     }
                     Spacer(minLength: 0)
                     VStack(spacing: 2) {
-                        Text(cd.big).font(.system(size: 34, weight: .bold)).monospacedDigit()
-                        if !cd.small.isEmpty { Text(cd.small).font(.system(size: 12)).opacity(0.9) }
+                        Text(cd.big).font(.dyn(34, weight: .bold)).monospacedDigit()
+                        if !cd.small.isEmpty { Text(cd.small).font(.dyn(12)).opacity(0.9) }
                     }
                 }
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("التالي").font(.system(size: 13, weight: .semibold)).opacity(0.9)
-                    Text("ما عندك مواعيد قادمة").font(.system(size: 19, weight: .bold))
-                    Text("أي موعد تضيفه يظهر هنا مع العدّ التنازلي.").font(.system(size: 14)).opacity(0.9)
+                    Text("التالي").font(.dyn(13, weight: .semibold)).opacity(0.9)
+                    Text("ما عندك مواعيد قادمة").font(.dyn(19, weight: .bold))
+                    Text("أي موعد تضيفه يظهر هنا مع العدّ التنازلي.").font(.dyn(14)).opacity(0.9)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -224,16 +252,16 @@ struct HomeCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 19, weight: .medium))
+                .font(.dyn(19, weight: .medium))
                 .foregroundStyle(ink)
                 .frame(width: 40, height: 40)
                 .background(soft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            Text(title).font(.system(size: 15, weight: .bold)).foregroundStyle(ink)
+            Text(title).font(.dyn(15, weight: .bold)).foregroundStyle(ink)
             if lines.isEmpty {
-                Text(empty).font(.system(size: 13)).foregroundStyle(T.muted).lineLimit(3)
+                Text(empty).font(.dyn(13)).foregroundStyle(T.muted).lineLimit(3)
             } else {
                 ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                    Text(line).font(.system(size: 13)).foregroundStyle(T.ink.opacity(0.85)).lineLimit(2)
+                    Text(line).font(.dyn(13)).foregroundStyle(T.ink.opacity(0.85)).lineLimit(2)
                 }
             }
             Spacer(minLength: 0)
@@ -268,7 +296,7 @@ struct TasksListView: View {
                 group("أنجزتها هذا الأسبوع", done, color: T.accent)
                 if open.isEmpty && done.isEmpty {
                     Text("ما عندك مهام. أضف مهمة من زر + في الرئيسية.")
-                        .font(.system(size: 14)).foregroundStyle(T.muted)
+                        .font(.dyn(14)).foregroundStyle(T.muted)
                 }
             }
             .padding(20)

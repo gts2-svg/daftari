@@ -16,14 +16,14 @@ struct PackListsSection: View {
     var body: some View {
         if lists.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("قوائم أغراضك").font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                Text("قوائم أغراضك").font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                 Text("سوّ قائمة للبر أو السفر أو العزبة، والصق أغراضك من الملاحظات مرة وحدة. علّم وأنت تجهّز، وبعد ما ترجع اضغط «صفّر العلامات» فتصير جاهزة للطلعة الجاية.")
-                    .font(.system(size: 14)).foregroundStyle(T.muted).lineSpacing(3)
+                    .font(.dyn(14)).foregroundStyle(T.muted).lineSpacing(3)
                 Button {
                     onOpen(PackActions.create())
                 } label: {
                     Text("قائمة جديدة")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.dyn(15, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(PackColors.ink, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -52,18 +52,18 @@ struct PackCard: View {
         HStack(spacing: 14) {
             PackRing(list: list, size: 64)
             VStack(alignment: .leading, spacing: 4) {
-                Text(list.displayName).font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                Text(list.displayName).font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                 Text(verbatim: list.total == 0 ? "فاضية — أضف أغراضك"
                      : (done ? "جاهز كله ✓" : "جهّزت \(list.doneCount) من \(list.total)"))
-                    .font(.system(size: 13)).foregroundStyle(done ? T.accent : T.muted)
+                    .font(.dyn(13)).foregroundStyle(done ? T.accent : T.muted)
                 if let trip = list.tripDate {
                     Text(verbatim: tripText(trip))
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.dyn(12, weight: .semibold))
                         .foregroundStyle(PackColors.ink)
                 }
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.backward").font(.system(size: 14, weight: .semibold)).foregroundStyle(T.muted)
+            Image(systemName: "chevron.backward").font(.dyn(14, weight: .semibold)).foregroundStyle(T.muted)
         }
         .padding(16)
         .card(radius: 22)
@@ -91,7 +91,7 @@ struct PackRing: View {
                         style: StrokeStyle(lineWidth: size / 9, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text(verbatim: "\(list.doneCount)/\(list.total)")
-                .font(.system(size: size / 4.2, weight: .bold))
+                .font(.dyn(size / 4.2, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(T.ink)
         }
@@ -158,7 +158,7 @@ struct PackListDetail: View {
                 get: { list.name },
                 set: { list.name = $0; PackActions.commit() }
             ))
-            .font(.system(size: 24, weight: .bold))
+            .font(.dyn(24, weight: .bold))
             .focused($nameFocused)
             .submitLabel(.done)
 
@@ -166,13 +166,13 @@ struct PackListDetail: View {
                 PackRing(list: list, size: 72)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(verbatim: list.total == 0 ? "ما فيها أغراض بعد" : "جهّزت \(list.doneCount) من \(list.total)")
-                        .font(.system(size: 16, weight: .bold)).foregroundStyle(T.ink)
+                        .font(.dyn(16, weight: .bold)).foregroundStyle(T.ink)
                     if list.doneCount > 0 {
                         Button {
                             confirmReset = true
                         } label: {
                             Label("صفّر العلامات", systemImage: "arrow.counterclockwise")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.dyn(14, weight: .semibold))
                                 .foregroundStyle(PackColors.ink)
                                 .padding(.horizontal, 12)
                                 .frame(minHeight: 38)
@@ -192,7 +192,7 @@ struct PackListDetail: View {
                 HStack(alignment: .top, spacing: 8) {
                     TextField("أضف غرض، أو الصق قائمتك من الملاحظات", text: $newText, axis: .vertical)
                         .lineLimit(1...8)
-                        .font(.system(size: 16))
+                        .font(.dyn(16))
                         .padding(12)
                         .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(T.track, lineWidth: 1.5))
@@ -201,7 +201,7 @@ struct PackListDetail: View {
                         newText = ""
                     } label: {
                         Text("أضف")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.dyn(15, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: 64, height: 48)
                             .background(newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? T.track : PackColors.ink,
@@ -211,7 +211,7 @@ struct PackListDetail: View {
                     .disabled(newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 Text("كل سطر يصير غرض. اضغط مطوّلاً على أي غرض لحذفه.")
-                    .font(.system(size: 12)).foregroundStyle(T.muted)
+                    .font(.dyn(12)).foregroundStyle(T.muted)
             }
 
             if !list.items.isEmpty {
@@ -227,7 +227,7 @@ struct PackListDetail: View {
 
             Button(role: .destructive) { confirmDelete = true } label: {
                 Label("احذف القائمة", systemImage: "trash")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.dyn(15, weight: .semibold))
                     .foregroundStyle(T.urgentInk)
                     .frame(maxWidth: .infinity, minHeight: 48)
                     .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -246,16 +246,16 @@ struct PackListDetail: View {
                     PackActions.commit()
                 }
             ))
-            .font(.system(size: 15, weight: .semibold))
+            .font(.dyn(15, weight: .semibold))
             if let trip = list.tripDate {
                 DatePicker("يوم الطلعة", selection: Binding(
                     get: { trip },
                     set: { list.tripDate = DF.startOfDay($0); PackActions.commit() }
                 ), displayedComponents: .date)
                 Text(verbatim: "\(DF.weekday(trip)) · \(DF.fullDate(trip))")
-                    .font(.system(size: 12)).foregroundStyle(T.muted)
+                    .font(.dyn(12)).foregroundStyle(T.muted)
                 Text("يذكّرك الليلة اللي قبلها الساعة 8:00 م، وصباح يوم الطلعة، بالأغراض اللي ما علّمت عليها.")
-                    .font(.system(size: 12)).foregroundStyle(T.muted)
+                    .font(.dyn(12)).foregroundStyle(T.muted)
             }
         }
         .padding(16)
@@ -268,11 +268,11 @@ struct PackListDetail: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: item.done ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 24))
-                    .foregroundStyle(item.done ? T.accent : T.track)
+                    .font(.dyn(24))
+                    .foregroundStyle(item.done ? T.accent : T.outline)
                     .frame(width: 40, height: 44)
                 Text(item.text)
-                    .font(.system(size: 16))
+                    .font(.dyn(16))
                     .strikethrough(item.done)
                     .foregroundStyle(item.done ? T.muted : T.ink)
                     .multilineTextAlignment(.leading)

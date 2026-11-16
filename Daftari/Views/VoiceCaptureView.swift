@@ -21,20 +21,20 @@ struct VoiceCaptureView: View {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.dyn(17, weight: .bold))
                         .frame(width: 44, height: 44)
                         .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 14))
                 }
                 .accessibilityLabel("إغلاق")
                 Spacer()
-                Text(statusText).font(.system(size: 15, weight: .semibold)).opacity(0.9)
+                Text(statusText).font(.dyn(15, weight: .semibold)).opacity(0.9)
             }
 
             Spacer(minLength: 0)
 
             ScrollView {
                 Text(trimmed.isEmpty ? placeholder : speech.transcript)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.dyn(24, weight: .medium))
                     .lineSpacing(8)
                     .opacity(trimmed.isEmpty ? 0.6 : 1)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,13 +43,13 @@ struct VoiceCaptureView: View {
 
             if let err = speech.errorText {
                 Text(err)
-                    .font(.system(size: 14))
+                    .font(.dyn(14))
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
             }
             Text("يتحول لنص داخل جوالك")
-                .font(.system(size: 13)).opacity(0.8)
+                .font(.dyn(13)).opacity(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer(minLength: 0)
@@ -70,7 +70,7 @@ struct VoiceCaptureView: View {
                     if speech.isRecording {
                         RoundedRectangle(cornerRadius: 8).fill(T.urgentInk).frame(width: 30, height: 30)
                     } else {
-                        Image(systemName: "mic.fill").font(.system(size: 34)).foregroundStyle(T.accent)
+                        Image(systemName: "mic.fill").font(.dyn(34)).foregroundStyle(T.accent)
                     }
                 }
                 .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: 6).frame(width: 104, height: 104))
@@ -82,7 +82,7 @@ struct VoiceCaptureView: View {
                     saveAsNote()
                 } label: {
                     Text(mode == .journal ? "احفظها في يومي" : "احفظها فكرة")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.dyn(15, weight: .semibold))
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 18))
                 }
@@ -91,7 +91,7 @@ struct VoiceCaptureView: View {
                         convertToTask()
                     } label: {
                         Text("حوّلها لمهمة")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.dyn(15, weight: .bold))
                             .foregroundStyle(T.accentDeep)
                             .frame(maxWidth: .infinity, minHeight: 54)
                             .background(Color.white, in: RoundedRectangle(cornerRadius: 18))
@@ -103,7 +103,7 @@ struct VoiceCaptureView: View {
             .opacity(trimmed.isEmpty ? 0.5 : 1)
 
             Text("تفتحها بسرعة من الزر الجانبي أو «يا Siri فكرة جديدة في دفتري»")
-                .font(.system(size: 12)).opacity(0.8)
+                .font(.dyn(12)).opacity(0.8)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 22)

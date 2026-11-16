@@ -26,31 +26,31 @@ struct UrgentView: View {
             ZStack {
                 Circle().fill(Color.white.opacity(0.14))
                 Image(systemName: "bell")
-                    .font(.system(size: 44, weight: .regular))
+                    .font(.dyn(44, weight: .regular))
             }
             .frame(width: 96, height: 96)
             .padding(.top, 40)
 
             Text("ضروري")
-                .font(.system(size: 14, weight: .bold))
+                .font(.dyn(14, weight: .bold))
                 .foregroundStyle(bg)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 6)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
 
             Text(verbatim: clock(now))
-                .font(.system(size: 76, weight: .bold))
+                .font(.dyn(76, weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
 
             VStack(spacing: 8) {
                 Text(entry?.title ?? "موعد ضروري")
-                    .font(.system(size: 25, weight: .bold))
+                    .font(.dyn(25, weight: .bold))
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
                 Text(verbatim: subtitle(now: now))
-                    .font(.system(size: 17))
+                    .font(.dyn(17))
                     .opacity(0.9)
                     .multilineTextAlignment(.center)
             }
@@ -63,7 +63,7 @@ struct UrgentView: View {
                     dismiss()
                 } label: {
                     Text("تم، شفته")
-                        .font(.system(size: 19, weight: .bold))
+                        .font(.dyn(19, weight: .bold))
                         .foregroundStyle(bg)
                         .frame(maxWidth: .infinity, minHeight: 64)
                         .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -77,20 +77,20 @@ struct UrgentView: View {
                     }
                 } label: {
                     Text("ذكّرني بعد 10 دقائق")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.dyn(17, weight: .semibold))
                         .frame(maxWidth: .infinity, minHeight: 58)
                         .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
-                Button("سكّر بدون شيء") { dismiss() }
-                    .font(.system(size: 15))
+                Button("أغلق وخلّه مفتوح") { dismiss() }
+                    .font(.dyn(15))
                     .opacity(0.8)
                     .frame(minHeight: 44)
             }
 
             Text("يرن حتى لو الجوال صامت · يذكّرك 4 مرات كل ربع ساعة")
-                .font(.system(size: 13))
+                .font(.dyn(13))
                 .opacity(0.8)
                 .multilineTextAlignment(.center)
         }

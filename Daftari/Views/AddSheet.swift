@@ -53,12 +53,12 @@ struct AddSheet: View {
                         if hasDate { ladderCard }
                     }
                     if let err = speech.errorText {
-                        Text(err).font(.system(size: 13)).foregroundStyle(T.urgentInk)
+                        Text(err).font(.dyn(13)).foregroundStyle(T.urgentInk)
                     }
                     if editing != nil {
                         Button(role: .destructive) { confirmDelete = true } label: {
                             Label("احذفه نهائياً", systemImage: "trash")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.dyn(16, weight: .semibold))
                                 .foregroundStyle(T.urgentInk)
                                 .frame(maxWidth: .infinity, minHeight: 50)
                                 .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -104,11 +104,11 @@ struct AddSheet: View {
 
     private var inputField: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("اكتب كما تتكلم").font(.system(size: 13, weight: .semibold)).foregroundStyle(T.muted)
+            Text("اكتب كما تتكلم").font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
             HStack(alignment: .top, spacing: 8) {
                 TextField("مثال: موعد الأسنان الثلاثاء 4 العصر", text: $text, axis: .vertical)
                     .lineLimit(1...5)
-                    .font(.system(size: 17))
+                    .font(.dyn(17))
                     .padding(14)
                     .background(T.field, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(T.accent, lineWidth: 1.5))
@@ -116,7 +116,7 @@ struct AddSheet: View {
                     toggleDictation()
                 } label: {
                     Image(systemName: speech.isRecording ? "stop.fill" : "mic.fill")
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(.dyn(19, weight: .semibold))
                         .foregroundStyle(speech.isRecording ? Color.white : T.accent)
                         .frame(width: 52, height: 52)
                         .background(speech.isRecording ? T.urgentInk : T.accentSoft,
@@ -146,14 +146,14 @@ struct AddSheet: View {
     private var dateCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Toggle("له تاريخ", isOn: Binding(get: { hasDate }, set: { hasDate = $0; manualDate = true }))
-                .font(.system(size: 15, weight: .semibold))
+                .font(.dyn(15, weight: .semibold))
             if hasDate {
                 DatePicker("اليوم", selection: Binding(get: { day }, set: { day = $0; manualDate = true }),
                            displayedComponents: .date)
                 Text(verbatim: "\(DF.weekday(day)) · \(DF.fullDate(day))")
-                    .font(.system(size: 13)).foregroundStyle(T.muted)
+                    .font(.dyn(13)).foregroundStyle(T.muted)
                 Toggle("له وقت", isOn: Binding(get: { hasTime }, set: { hasTime = $0; manualDate = true }))
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.dyn(15, weight: .semibold))
                 if hasTime {
                     DatePicker("الوقت", selection: Binding(get: { time }, set: { time = $0; manualDate = true }),
                                displayedComponents: .hourAndMinute)
@@ -167,7 +167,7 @@ struct AddSheet: View {
     /// No date? Then it nudges every few days until «تم» (تغيير الزيت، تجديد…).
     private var nagCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ما له وقت محدد؟ ذكّرني فيه لين أخلّصه").font(.system(size: 13, weight: .semibold)).foregroundStyle(T.muted)
+            Text("ما له وقت محدد؟ ذكّرني فيه لين أخلّصه").font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
             HStack(spacing: 6) {
                 ForEach([(0, "لا"), (1, "كل يوم"), (2, "يومين"), (3, "3 أيام"), (7, "أسبوع")], id: \.0) { opt in
                     let on = nagDays == opt.0
@@ -175,12 +175,12 @@ struct AddSheet: View {
                         nagDays = opt.0
                     } label: {
                         Text(opt.1)
-                            .font(.system(size: 14, weight: on ? .bold : .regular))
+                            .font(.dyn(14, weight: on ? .bold : .regular))
                             .foregroundStyle(on ? T.taskInk : T.ink)
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .background(on ? T.taskSoft : Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(on ? T.taskInk : T.track, lineWidth: on ? 2 : 1.5))
+                                .strokeBorder(on ? T.taskInk : T.outline.opacity(0.6), lineWidth: on ? 2 : 1.5))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(on ? .isSelected : [])
@@ -189,7 +189,7 @@ struct AddSheet: View {
             Text(nagDays == 0
                  ? "يطلع لك تحت «معلّقة» وفي رسالة الصباح بس."
                  : "يطلع لك تحت «معلّقة» وفي رسالة الصباح، ويوصلك تذكير الساعة \(nagTimeText) \(nagEveryText) لين تضغط «تم». وفيه زر «مو اليوم».")
-                .font(.system(size: 12)).foregroundStyle(T.muted)
+                .font(.dyn(12)).foregroundStyle(T.muted)
         }
         .padding(16)
         .card(T.bg, radius: 18)
@@ -210,7 +210,7 @@ struct AddSheet: View {
 
     private var importanceCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("الأهمية").font(.system(size: 13, weight: .semibold)).foregroundStyle(T.muted)
+            Text("الأهمية").font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
             HStack(spacing: 8) {
                 ForEach(Importance.allCases, id: \.self) { i in
                     let on = importance == i
@@ -218,14 +218,14 @@ struct AddSheet: View {
                         importance = i
                     } label: {
                         VStack(spacing: 2) {
-                            Text(i.label).font(.system(size: 15, weight: on ? .bold : .semibold))
-                            Text(i.hint).font(.system(size: 11))
+                            Text(i.label).font(.dyn(15, weight: on ? .bold : .semibold))
+                            Text(i.hint).font(.dyn(11))
                         }
                         .foregroundStyle(T.ink(i))
                         .frame(maxWidth: .infinity, minHeight: 64)
                         .background(on ? T.soft(i) : Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(on ? T.ink(i) : T.track, lineWidth: on ? 2 : 1.5))
+                            .strokeBorder(on ? T.ink(i) : T.outline.opacity(0.6), lineWidth: on ? 2 : 1.5))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(on ? .isSelected : [])
@@ -233,7 +233,7 @@ struct AddSheet: View {
             }
             if importance == .urgent {
                 HStack {
-                    Text("المنبّه يرن قبل الموعد بـ").font(.system(size: 14))
+                    Text("المنبّه يرن قبل الموعد بـ").font(.dyn(14))
                     Spacer()
                     Picker("المنبّه قبل الموعد", selection: $lead) {
                         Text("وقت الموعد").tag(0)
@@ -251,13 +251,13 @@ struct AddSheet: View {
 
     private var ladderCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("يذكّرك كذا").font(.system(size: 13, weight: .semibold)).foregroundStyle(T.muted)
+            Text("يذكّرك كذا").font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
             ForEach(Array(ladder.enumerated()), id: \.offset) { _, step in
                 HStack(spacing: 8) {
                     Circle().fill(step.strong ? T.urgentInk : Color(hex: 0xC9A15A)).frame(width: 8, height: 8)
-                    Text(step.when).font(.system(size: 14, weight: step.strong ? .bold : .regular))
+                    Text(step.when).font(.dyn(14, weight: step.strong ? .bold : .regular))
                     Spacer()
-                    Text(step.how).font(.system(size: 13, weight: step.strong ? .bold : .regular))
+                    Text(step.how).font(.dyn(13, weight: step.strong ? .bold : .regular))
                         .foregroundStyle(step.strong ? T.urgentInk : T.muted)
                 }
             }
@@ -295,7 +295,7 @@ struct AddSheet: View {
     private var saveBar: some View {
         Button(action: save) {
             Text("حفظ")
-                .font(.system(size: 17, weight: .bold))
+                .font(.dyn(17, weight: .bold))
                 .foregroundStyle(trimmed.isEmpty ? T.muted : .white)
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .background(trimmed.isEmpty ? T.track : T.accent, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -477,7 +477,7 @@ struct FlowRow: View {
         FlowLayout(spacing: 8) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 Text(item)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.dyn(13, weight: .semibold))
                     .foregroundStyle(T.accentDeep)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)

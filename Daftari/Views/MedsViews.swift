@@ -24,33 +24,41 @@ struct MedsTodayCard: View {
             return left <= 3
         }
 
-        Button {
-            AppState.shared.tab = 3
-        } label: {
-            VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { AppState.shared.thingsSection = 0; AppState.shared.tab = 3 } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "drop")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.dyn(17, weight: .semibold))
                         .foregroundStyle(MedColors.ink)
                         .frame(width: 36, height: 36)
                         .background(MedColors.soft, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                    Text("أدويتي اليوم").font(.system(size: 15, weight: .bold)).foregroundStyle(MedColors.ink)
+                    Text("أدويتي اليوم").font(.dyn(15, weight: .bold)).foregroundStyle(MedColors.ink)
                     Spacer()
                     if total > 0 {
-                        Text(verbatim: "\(taken) من \(total) جرعات").font(.system(size: 13)).foregroundStyle(T.muted)
+                        Text(verbatim: "\(taken) من \(total) جرعات").font(.dyn(13)).foregroundStyle(T.muted)
                     }
+                    Image(systemName: "chevron.left").font(.dyn(12, weight: .bold)).foregroundStyle(T.muted)
                 }
+            }
+            .buttonStyle(.plain)
                 ForEach(active, id: \.uid) { m in
                     HStack(spacing: 10) {
-                        Text(m.name).font(.system(size: 14)).foregroundStyle(T.ink).lineLimit(1)
+                        Text(m.name).font(.dyn(14)).foregroundStyle(T.ink).lineLimit(1)
                         Spacer(minLength: 6)
-                        HStack(spacing: 5) {
+                        // Each dot is a button: tap to mark that dose taken (or not), right from the home screen.
+                        HStack(spacing: 2) {
                             ForEach(m.slots, id: \.self) { slot in
-                                DoseDot(state: m.state(now, slot, now: now))
+                                Button { MedActions.toggle(m, slot: slot, day: now) } label: {
+                                    DoseDot(state: m.state(now, slot, now: now))
+                                        .frame(width: 30, height: 34)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("جرعة \(Medicine.slotText(slot))")
                             }
                         }
-                        Text(m.nextDose(now: now).map(Medicine.slotText) ?? "خلصت")
-                            .font(.system(size: 13, weight: .bold))
+                        Text(m.nextDose(now: now).map(Medicine.slotText) ?? "تمّت")
+                            .font(.dyn(13, weight: .bold))
                             .foregroundStyle(m.nextDose(now: now) == nil ? T.accent : MedColors.ink)
                             .frame(width: 64, alignment: .trailing)
                     }
@@ -61,18 +69,16 @@ struct MedsTodayCard: View {
                         Text(verbatim: "\(m.name): \(m.expiryText(now: now))").lineLimit(2)
                         Spacer(minLength: 0)
                     }
-                    .font(.system(size: 13))
+                    .font(.dyn(13))
                     .foregroundStyle(Color(hex: 0x8E2F0A))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .card(radius: 22)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .card(radius: 22)
     }
 }
 
@@ -104,7 +110,7 @@ struct ThingsView: View {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Text("أشيائي").font(.system(size: 28, weight: .bold)).foregroundStyle(T.ink)
+                            Text("أشيائي").font(.dyn(28, weight: .bold)).foregroundStyle(T.ink)
                             Spacer()
                             if section == 0 || section == 1 {
                                 Button {
@@ -117,7 +123,7 @@ struct ThingsView: View {
                                     }
                                 } label: {
                                     Image(systemName: "plus")
-                                        .font(.system(size: 18, weight: .bold))
+                                        .font(.dyn(18, weight: .bold))
                                         .foregroundStyle(.white)
                                         .frame(width: 44, height: 44)
                                         .background(T.ink, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -125,14 +131,13 @@ struct ThingsView: View {
                                 .accessibilityLabel(section == 0 ? "إضافة دواء" : (packSub == 1 ? "قطة جديدة" : "قائمة أغراض جديدة"))
                             }
                         }
+                        // التجديدات والضمانات والسيارة تظهر هنا لما تنبني (المرحلة الثانية).
                         Picker("القسم", selection: $app.thingsSection) {
                             Text("أدويتي").tag(0)
                             Text("أغراضي").tag(1)
-                            Text("تجديدات").tag(2)
-                            Text("ضمانات").tag(3)
-                            Text("السيارة").tag(4)
                         }
                         .pickerStyle(.segmented)
+                        .onAppear { if app.thingsSection > 1 { app.thingsSection = 0 } }
 
                         if section == 0 {
                             medsSection(now: context.date)
@@ -176,7 +181,7 @@ struct ThingsView: View {
         let on = packSub == tag
         return Button { packSub = tag } label: {
             Label(title, systemImage: icon)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.dyn(14, weight: .semibold))
                 .foregroundStyle(on ? .white : T.ink)
                 .padding(.horizontal, 14)
                 .frame(minHeight: 38)
@@ -191,14 +196,14 @@ struct ThingsView: View {
         let finished = meds.filter { $0.courseFinished }
         if meds.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("أضف قطراتك وأدويتك").font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
+                Text("أضف قطراتك وأدويتك").font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
                 Text("سجّل متى فتحت العلبة وكم تبقى صالحة، وأوقات الجرعات. يذكّرك بكل جرعة، ومرة ثانية بعد ربع ساعة إذا ما سجّلتها، وينبهك قبل ما تنتهي العلبة.")
-                    .font(.system(size: 14)).foregroundStyle(T.muted).lineSpacing(3)
+                    .font(.dyn(14)).foregroundStyle(T.muted).lineSpacing(3)
                 Button {
                     AppState.shared.open(.medicine(nil))
                 } label: {
                     Text("إضافة دواء")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.dyn(15, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(MedColors.ink, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -211,7 +216,7 @@ struct ThingsView: View {
         ForEach(current, id: \.uid) { m in MedCard(med: m, now: now) }
         if !meds.isEmpty {
             Text("الدائرة = كم باقي من صلاحية العلبة بعد فتحها. تنقص يوم بيوم، وتحمرّ إذا قربت تخلص.")
-                .font(.system(size: 13)).foregroundStyle(T.muted).lineSpacing(3)
+                .font(.dyn(13)).foregroundStyle(T.muted).lineSpacing(3)
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(T.track, style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
@@ -223,9 +228,9 @@ struct ThingsView: View {
                     AppState.shared.open(.medicine(m.uid))
                 } label: {
                     HStack {
-                        Text(m.name).font(.system(size: 15)).foregroundStyle(T.muted)
+                        Text(m.name).font(.dyn(15)).foregroundStyle(T.muted)
                         Spacer()
-                        Image(systemName: "chevron.backward").font(.system(size: 13)).foregroundStyle(T.track)
+                        Image(systemName: "chevron.backward").font(.dyn(13)).foregroundStyle(T.track)
                     }
                     .padding(14)
                     .card(radius: 16)
@@ -237,9 +242,9 @@ struct ThingsView: View {
 
     private var comingSoon: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("في المرحلة الثانية").font(.system(size: 18, weight: .bold)).foregroundStyle(T.ink)
+            Text("في المرحلة الثانية").font(.dyn(18, weight: .bold)).foregroundStyle(T.ink)
             Text("التجديدات (الاستمارة، الرخصة، التأمين، الفحص، الجواز)، وضمانات أجهزتك مع صور فواتيرها، وصيانة السيارة بالكيلو أو بالتاريخ — بنفس الدوائر.")
-                .font(.system(size: 14)).foregroundStyle(T.muted).lineSpacing(3)
+                .font(.dyn(14)).foregroundStyle(T.muted).lineSpacing(3)
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -270,23 +275,28 @@ struct MedCard: View {
                             .rotationEffect(.degrees(-90))
                         VStack(spacing: 0) {
                             Text(left.map { "\(max(0, $0))" } ?? "—")
-                                .font(.system(size: 20, weight: .bold)).monospacedDigit()
+                                .font(.dyn(20, weight: .bold)).monospacedDigit()
                                 .foregroundStyle(med.openedAt == nil ? T.muted : (urgent ? T.urgentInk : MedColors.ink))
                             Text(left.map { $0 >= 3 && $0 <= 10 ? "أيام" : ($0 == 1 ? "يوم" : ($0 == 2 ? "يومان" : "يوماً")) } ?? "")
-                                .font(.system(size: 10)).foregroundStyle(T.muted)
+                                .font(.dyn(10)).foregroundStyle(T.muted)
                         }
                     }
                     .frame(width: 76, height: 76)
+                    .overlay(alignment: .bottom) {
+                        Text("صلاحية العلبة").font(.dyn(10, weight: .semibold)).foregroundStyle(T.muted)
+                            .offset(y: 14)
+                    }
+                    .padding(.bottom, 12)
                     .accessibilityElement(children: .combine)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(med.name).font(.system(size: 17, weight: .bold)).foregroundStyle(T.ink)
-                        Text(med.openedText).font(.system(size: 12)).foregroundStyle(T.muted)
+                        Text(med.name).font(.dyn(17, weight: .bold)).foregroundStyle(T.ink)
+                        Text(med.openedText).font(.dyn(12)).foregroundStyle(T.muted)
                         Text(med.expiryText(now: now))
-                            .font(.system(size: 12, weight: urgent ? .bold : .regular))
+                            .font(.dyn(12, weight: urgent ? .bold : .regular))
                             .foregroundStyle(urgent ? T.urgentInk : T.muted)
                         if !med.doseNote.isEmpty {
-                            Text(med.doseNote).font(.system(size: 12)).foregroundStyle(MedColors.deep)
+                            Text(med.doseNote).font(.dyn(12)).foregroundStyle(MedColors.deep)
                         }
                     }
                     Spacer(minLength: 0)
@@ -296,7 +306,7 @@ struct MedCard: View {
 
             if !med.slots.isEmpty {
                 HStack(spacing: 8) {
-                    Text("اليوم").font(.system(size: 13)).foregroundStyle(T.muted)
+                    Text("اليوم").font(.dyn(13)).foregroundStyle(T.muted)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
                             ForEach(med.slots, id: \.self) { slot in
@@ -308,24 +318,11 @@ struct MedCard: View {
             }
 
             HStack(spacing: 8) {
-                if !med.slots.isEmpty {
-                    Button {
-                        MedActions.takeNow(med)
-                    } label: {
-                        Text(med.slotToMarkNow(now: now) == nil ? "خلصت جرعات اليوم" : "أخذت جرعة الآن")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(med.slotToMarkNow(now: now) == nil ? T.track : MedColors.ink,
-                                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .disabled(med.slotToMarkNow(now: now) == nil)
-                }
                 Button {
                     if med.openedAt == nil { MedActions.openNewPack(med) } else { confirmNewPack = true }
                 } label: {
                     Text(med.openedAt == nil ? "فتحتها اليوم" : "فتحت علبة جديدة")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.dyn(14, weight: .semibold))
                         .foregroundStyle(T.ink)
                         .frame(maxWidth: .infinity, minHeight: 44)
                         .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -350,8 +347,8 @@ struct MedCard: View {
             MedActions.toggle(med, slot: slot)
         } label: {
             HStack(spacing: 4) {
-                if state == .taken { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)) }
-                Text(Medicine.slotText(slot)).font(.system(size: 12, weight: .semibold))
+                if state == .taken { Image(systemName: "checkmark").font(.dyn(11, weight: .bold)) }
+                Text(Medicine.slotText(slot)).font(.dyn(12, weight: .semibold))
             }
             .padding(.horizontal, 10)
             .frame(height: 32)
@@ -397,7 +394,7 @@ struct MedicineSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     field("الاسم") {
                         TextField("مثال: قطرة العين", text: $name)
-                            .font(.system(size: 17))
+                            .font(.dyn(17))
                             .padding(14)
                             .background(T.field, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(MedColors.ink, lineWidth: 1.5))
@@ -412,21 +409,21 @@ struct MedicineSheet: View {
                         }
                         if customShelf {
                             Stepper("\(shelfDays) يوماً", value: $shelfDays, in: 1...730)
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.dyn(15, weight: .semibold))
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
                         Toggle(isOn: $opened) {
-                            Text("فتحت العلبة").font(.system(size: 15, weight: .bold))
+                            Text("فتحت العلبة").font(.dyn(15, weight: .bold))
                         }
                         if opened {
                             DatePicker("يوم الفتح", selection: $openedDay, in: ...Date(), displayedComponents: .date)
                             Text("فتحتها \(DF.fullDate(openedDay)) · تنتهي \(DF.dayMonth(DF.addDays(shelfDays, to: DF.startOfDay(openedDay)), cal: DF.primary))")
-                                .font(.system(size: 12)).foregroundStyle(T.muted)
+                                .font(.dyn(12)).foregroundStyle(T.muted)
                         } else {
                             Text("لما تفتحها اضغط «فتحتها اليوم» في أدويتي، ويبدأ العدّ.")
-                                .font(.system(size: 12)).foregroundStyle(T.muted)
+                                .font(.dyn(12)).foregroundStyle(T.muted)
                         }
                     }
                     .padding(14)
@@ -442,10 +439,10 @@ struct MedicineSheet: View {
                         if timesPerDay > 0 {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("أول جرعة").font(.system(size: 15, weight: .semibold))
+                                    Text("أول جرعة").font(.dyn(15, weight: .semibold))
                                     if timesPerDay > 1 {
                                         Text(verbatim: "والباقي كل \(24 / timesPerDay) ساعات تلقائياً")
-                                            .font(.system(size: 12)).foregroundStyle(T.muted)
+                                            .font(.dyn(12)).foregroundStyle(T.muted)
                                     }
                                 }
                                 Spacer()
@@ -462,8 +459,8 @@ struct MedicineSheet: View {
                                     timesPerDay = 0
                                 } label: {
                                     HStack(spacing: 6) {
-                                        Text(Medicine.slotText(slot)).font(.system(size: 14, weight: .bold))
-                                        Image(systemName: "xmark").font(.system(size: 10, weight: .bold))
+                                        Text(Medicine.slotText(slot)).font(.dyn(14, weight: .bold))
+                                        Image(systemName: "xmark").font(.dyn(10, weight: .bold))
                                     }
                                     .foregroundStyle(MedColors.deep)
                                     .padding(.horizontal, 12)
@@ -477,7 +474,7 @@ struct MedicineSheet: View {
                                 addingTime.toggle()
                             } label: {
                                 Text("+ وقت")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(.dyn(14, weight: .semibold))
                                     .foregroundStyle(MedColors.ink)
                                     .padding(.horizontal, 14)
                                     .frame(height: 40)
@@ -496,17 +493,17 @@ struct MedicineSheet: View {
                                     timesPerDay = 0
                                     addingTime = false
                                 }
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.dyn(15, weight: .bold))
                             }
                         }
                         TextField("الكمية، مثال: قطرة وحدة في كل عين", text: $doseNote)
-                            .font(.system(size: 14))
+                            .font(.dyn(14))
                             .padding(12)
                             .background(T.field, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(T.track, lineWidth: 1.5))
                         Text(slots.isEmpty ? "بدون أوقات: يتابع الصلاحية فقط بدون تذكير بالجرعات."
                                            : "يذكّرك بكل جرعة، ومرة ثانية بعد 15 دقيقة إذا ما ضغطت «أخذتها».")
-                            .font(.system(size: 12)).foregroundStyle(T.muted)
+                            .font(.dyn(12)).foregroundStyle(T.muted)
                     }
 
                     field("مدة العلاج") {
@@ -528,7 +525,7 @@ struct MedicineSheet: View {
             .safeAreaInset(edge: .bottom) {
                 Button(action: save) {
                     Text("حفظ")
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.dyn(17, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 56)
                         .background(name.trimmingCharacters(in: .whitespaces).isEmpty ? T.track : MedColors.ink,
@@ -565,7 +562,7 @@ struct MedicineSheet: View {
 
     private func field<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(T.muted)
+            Text(title).font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
             content()
         }
     }
@@ -573,7 +570,7 @@ struct MedicineSheet: View {
     private func choice(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 14, weight: on ? .bold : .regular))
+                .font(.dyn(14, weight: on ? .bold : .regular))
                 .foregroundStyle(on ? MedColors.deep : T.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(on ? MedColors.soft : Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))

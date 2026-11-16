@@ -127,7 +127,7 @@ struct SettingsView: View {
                     LabeledContent("تنبيهات مجدولة الحين", value: "\(pendingCount) من 64")
                     if Scheduler.shared.lastDropped > 0 {
                         Text("\(Scheduler.shared.lastDropped) تذكير ما وسعها الجدول الحين، تنضاف تلقائياً لما يقرب وقتها.")
-                            .font(.system(size: 14)).foregroundStyle(T.urgentInk)
+                            .font(.dyn(14)).foregroundStyle(T.urgentInk)
                     }
                     if let h = Scheduler.shared.lastHorizon {
                         LabeledContent("مجدولة حتى", value: "\(DF.weekday(h)) \(DF.fullDate(h, year: false))")
@@ -135,8 +135,8 @@ struct SettingsView: View {
                     LabeledContent("المنبّه الحقيقي", value: AlarmService.isAuthorized ? "يعمل" : "مقفل")
                     ForEach(Array(upcoming.enumerated()), id: \.offset) { _, u in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(u.1).font(.system(size: 15, weight: .semibold))
-                            Text("\(DF.relativeDay(u.0)) · \(DF.time(u.0))").font(.system(size: 13)).foregroundStyle(T.muted)
+                            Text(u.1).font(.dyn(15, weight: .semibold))
+                            Text("\(DF.relativeDay(u.0)) · \(DF.time(u.0))").font(.dyn(13)).foregroundStyle(T.muted)
                         }
                     }
                 } header: {
@@ -254,7 +254,7 @@ struct SettingsView: View {
             if ok {
                 Label("مسموح", systemImage: "checkmark.circle.fill")
                     .labelStyle(.titleAndIcon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.dyn(14, weight: .semibold))
                     .foregroundStyle(T.accent)
             } else {
                 Button("اسمح") {
@@ -263,7 +263,7 @@ struct SettingsView: View {
                         await refresh()
                     }
                 }
-                .font(.system(size: 14, weight: .bold))
+                .font(.dyn(14, weight: .bold))
                 .buttonStyle(.borderedProminent)
             }
         }

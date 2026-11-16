@@ -25,20 +25,20 @@ struct IdeasView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("الأفكار").font(.system(size: 30, weight: .bold)).foregroundStyle(T.ink)
+                    Text("الأفكار").font(.dyn(30, weight: .bold)).foregroundStyle(T.ink)
 
                     Button {
                         AppState.shared.open(.voice(.idea))
                     } label: {
                         HStack(spacing: 14) {
                             Image(systemName: "mic.fill")
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.dyn(24, weight: .semibold))
                                 .foregroundStyle(T.accent)
                                 .frame(width: 60, height: 60)
                                 .background(Color.white, in: Circle())
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("قلها بصوتك").font(.system(size: 17, weight: .bold))
-                                Text("تتحول لنص داخل جوالك، وتقدر تخليها مهمة").font(.system(size: 13)).opacity(0.9)
+                                Text("قلها بصوتك").font(.dyn(17, weight: .bold))
+                                Text("تتحول لنص داخل جوالك، وتقدر تخليها مهمة").font(.dyn(13)).opacity(0.9)
                             }
                             Spacer()
                         }
@@ -55,7 +55,7 @@ struct IdeasView: View {
                             .padding(14)
                             .card(radius: 16)
                         Button("أضف", action: add)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.dyn(15, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: 64, height: 50)
                             .background(text.trimmingCharacters(in: .whitespaces).isEmpty ? T.track : T.ink,
@@ -65,7 +65,7 @@ struct IdeasView: View {
 
                     if notes.isEmpty {
                         Text("أي فكرة تمر عليك، قلها أو اكتبها هنا. وتطلع لك هنا مرتبة بالأيام.")
-                            .font(.system(size: 14)).foregroundStyle(T.muted)
+                            .font(.dyn(14)).foregroundStyle(T.muted)
                             .padding(.top, 8)
                     }
 
@@ -94,15 +94,15 @@ struct IdeasView: View {
     private func noteRow(_ e: Entry) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: e.kind == .journal ? "book.closed" : "lightbulb")
-                .font(.system(size: 15))
+                .font(.dyn(15))
                 .foregroundStyle(e.kind == .journal ? T.accent : T.ideaInk)
                 .frame(width: 24)
                 .padding(.top, 2)
             VStack(alignment: .leading, spacing: 4) {
-                Text(e.title).font(.system(size: 15)).foregroundStyle(T.ink)
+                Text(e.title).font(.dyn(15)).foregroundStyle(T.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(e.kind == .journal ? "يومية · \(DF.time(e.createdAt))" : DF.time(e.createdAt))
-                    .font(.system(size: 12)).foregroundStyle(T.muted)
+                    .font(.dyn(12)).foregroundStyle(T.muted)
             }
         }
         .padding(14)
