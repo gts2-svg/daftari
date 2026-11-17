@@ -60,6 +60,17 @@ enum Store {
     /// Last save failure, shown in Settings so a silent failure doesn't go unnoticed.
     static private(set) var lastSaveError: String?
 
+    /// Once, after the «شغل / بيت» filter arrived: guess it for everything saved before.
+    static func guessWorkOnce() {
+        let key = "workGuessed"
+        guard openError == nil, !UserDefaults.standard.bool(forKey: key) else { return }
+        for e in allEntries() where !e.isWork {
+            e.isWork = ArabicDateParser.looksLikeWork(e.title)
+        }
+        save()
+        UserDefaults.standard.set(true, forKey: key)
+    }
+
     static func save() {
         do {
             try context.save()

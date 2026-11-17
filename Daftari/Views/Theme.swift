@@ -1,11 +1,48 @@
 import SwiftUI
 
 extension Font {
-    /// A system font that follows the phone's text size setting (Settings › Display › Text Size),
+    /// Almarai, following the phone's text size setting (Settings › Display › Text Size),
     /// capped so very large settings don't break the layout.
     static func dyn(_ size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
         let scaled = UIFontMetrics(forTextStyle: .body).scaledValue(for: size)
-        return .system(size: min(scaled, size * 1.6), weight: weight, design: design)
+        return .custom(AppFont.name(weight), fixedSize: min(scaled, size * 1.6))
+    }
+
+    /// Almarai at a fixed size (the PDF report must not grow with the text size setting).
+    static func fixed(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .custom(AppFont.name(weight), fixedSize: size)
+    }
+}
+
+enum AppFont {
+    static func name(_ weight: Font.Weight) -> String {
+        switch weight {
+        case .ultraLight, .thin, .light: return "Almarai-Light"
+        case .semibold, .bold: return "Almarai-Bold"
+        case .heavy, .black: return "Almarai-ExtraBold"
+        default: return "Almarai-Regular"
+        }
+    }
+
+    static func ui(_ size: CGFloat, _ weight: Font.Weight = .regular) -> UIFont {
+        UIFont(name: name(weight), size: size) ?? .systemFont(ofSize: size)
+    }
+
+    /// Navigation titles, segmented pickers and tab labels in Almarai too.
+    static func applyAppearance() {
+        let nav = UINavigationBarAppearance()
+        nav.configureWithTransparentBackground()
+        nav.titleTextAttributes = [.font: ui(17, .bold)]
+        nav.largeTitleTextAttributes = [.font: ui(30, .heavy)]
+        UINavigationBar.appearance().standardAppearance = nav
+        UINavigationBar.appearance().scrollEdgeAppearance = nav
+        UINavigationBar.appearance().compactAppearance = nav
+        let seg = UISegmentedControl.appearance()
+        seg.setTitleTextAttributes([.font: ui(14)], for: .normal)
+        seg.setTitleTextAttributes([.font: ui(14, .bold)], for: .selected)
+        UITabBarItem.appearance().setTitleTextAttributes([.font: ui(11)], for: .normal)
+        UITabBarItem.appearance().setTitleTextAttributes([.font: ui(11, .bold)], for: .selected)
+        UIBarButtonItem.appearance().setTitleTextAttributes([.font: ui(17)], for: .normal)
     }
 }
 
@@ -17,37 +54,40 @@ extension Color {
     }
 }
 
-/// Colours from the chosen «هادئ» designs.
+/// The new light design: airy grey-white background, white cards with a soft shadow,
+/// one teal accent; red only for «ضروري», amber for «مهم».
 enum T {
-    static let bg = Color(hex: 0xF5F1E8)
-    static let field = Color(hex: 0xFAF8F3)
+    static let bg = Color(hex: 0xF6F7FB)
+    static let field = Color(hex: 0xF9FAFB)
     static let card = Color.white
-    static let ink = Color(hex: 0x1E2A2B)
-    static let muted = Color(hex: 0x5E6866)
-    static let line = Color(hex: 0xEDE7DA)
-    static let track = Color(hex: 0xE3DCCB)
-    /// Outlines that must be seen (tick circles, choice borders): darker than `track`, ≥ 3:1 on white.
-    static let outline = Color(hex: 0x9C927E)
-    static let accent = Color(hex: 0x1D6A63)
-    static let accentSoft = Color(hex: 0xDCEBE7)
-    static let accentDeep = Color(hex: 0x14524C)
-    static let taskInk = Color(hex: 0x7A4F00)
-    static let taskSoft = Color(hex: 0xFCEFCF)
-    static let ideaInk = Color(hex: 0x55407A)
-    static let ideaSoft = Color(hex: 0xEEE8F6)
-    static let habitInk = Color(hex: 0x22633A)
-    static let habitSoft = Color(hex: 0xE3F1E7)
-    static let urgentInk = Color(hex: 0xA63A0B)
-    static let urgentSoft = Color(hex: 0xFBE2D5)
-    static let normalInk = Color(hex: 0x3F4E5C)
-    static let normalSoft = Color(hex: 0xE8EDF2)
-    static let systemDot = Color(hex: 0x6B7C8C)
-    static let morningBg = Color(hex: 0xFFF1D6)
-    static let morningInk = Color(hex: 0x2A1E0E)
-    static let nightBg = Color(hex: 0x142033)
-    static let nightCard = Color(hex: 0x1D2C44)
+    static let ink = Color(hex: 0x111827)
+    static let muted = Color(hex: 0x6B7280)
+    static let line = Color(hex: 0xF0F1F4)
+    static let track = Color(hex: 0xE5E7EB)
+    /// Outlines that must be seen (tick circles, choice borders): ≥ 3:1 on white.
+    static let outline = Color(hex: 0x9CA3AF)
+    static let accent = Color(hex: 0x0F766E)
+    static let accentSoft = Color(hex: 0xCCFBF1)
+    static let accentDeep = Color(hex: 0x115E59)
+    static let taskInk = Color(hex: 0x92400E)
+    static let taskSoft = Color(hex: 0xFEF3C7)
+    static let ideaInk = Color(hex: 0x5B21B6)
+    static let ideaSoft = Color(hex: 0xEDE9FE)
+    static let habitInk = Color(hex: 0x166534)
+    static let habitSoft = Color(hex: 0xDCFCE7)
+    static let urgentInk = Color(hex: 0xB91C1C)
+    static let urgentSoft = Color(hex: 0xFEE2E2)
+    static let urgent = Color(hex: 0xDC2626)
+    static let urgentLine = Color(hex: 0xFCA5A5)
+    static let normalInk = Color(hex: 0x374151)
+    static let normalSoft = Color(hex: 0xF3F4F6)
+    static let systemDot = Color(hex: 0x6B7280)
+    static let morningBg = Color(hex: 0xFFF8EC)
+    static let morningInk = Color(hex: 0x1F1A14)
+    static let nightBg = Color(hex: 0x131C2E)
+    static let nightCard = Color(hex: 0x1C2840)
     static let nightButton = Color(hex: 0x2A3B57)
-    static let nightText = Color(hex: 0xEEF2F6)
+    static let nightText = Color(hex: 0xEEF2F7)
     static let nightMuted = Color(hex: 0xA9B8CC)
     static let nightGreen = Color(hex: 0x5CC08F)
     static let gold = Color(hex: 0xF2B544)
@@ -65,6 +105,15 @@ enum T {
         case .normal: return normalSoft
         case .important: return taskSoft
         case .urgent: return urgentSoft
+        }
+    }
+
+    /// The small dot in the calendar and the strong colour of a selected choice.
+    static func strong(_ i: Importance) -> Color {
+        switch i {
+        case .normal: return accent
+        case .important: return Color(hex: 0xD97706)
+        case .urgent: return urgent
         }
     }
 }
@@ -85,7 +134,11 @@ struct CardBackground: ViewModifier {
     var color: Color = T.card
     var radius: CGFloat = 20
     func body(content: Content) -> some View {
-        content.background(color, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+        content.background {
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(color)
+                .shadow(color: color == T.card ? Color(hex: 0x111827).opacity(0.06) : .clear, radius: 10, x: 0, y: 4)
+        }
     }
 }
 

@@ -41,6 +41,11 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSupportsIndirectInputEvents: true
         ITSAppUsesNonExemptEncryption: false
+        UIAppFonts:
+          - Almarai-Light.ttf
+          - Almarai-Regular.ttf
+          - Almarai-Bold.ttf
+          - Almarai-ExtraBold.ttf
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
         UIBackgroundModes: [fetch]

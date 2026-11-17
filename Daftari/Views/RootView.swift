@@ -35,6 +35,7 @@ struct RootView: View {
                 return
             }
             #endif
+            Store.guessWorkOnce()
             await Permissions.firstRun()
             if await ReminderService.shared.sync() > 0 { Scheduler.shared.rebuildSoon() }
         }
@@ -92,19 +93,19 @@ struct StoreRecoveryView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.dyn(40)).foregroundStyle(.orange)
-                Text("تعذّر فتح بياناتك").font(.title.bold())
+                Text("تعذّر فتح بياناتك").font(.dyn(26, weight: .bold))
                 Text("لا تحذف التطبيق. بياناتك ما زالت محفوظة في الجوال، لكن هذه النسخة ما قدرت تقرأها. احفظ ملفات البيانات تحت في «الملفات»، وأرسلها لي نسترجعها.")
-                    .font(.body)
+                    .font(.dyn(16))
                 if !Store.storeFiles.isEmpty {
                     ShareLink(items: Store.storeFiles) {
                         Label("احفظ ملفات البيانات", systemImage: "square.and.arrow.up")
-                            .font(.headline)
+                            .font(.dyn(16, weight: .bold))
                             .frame(maxWidth: .infinity).padding()
                             .background(T.accent, in: RoundedRectangle(cornerRadius: 14))
                             .foregroundStyle(.white)
                     }
                 }
-                Text(Store.openError ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(4)
+                Text(Store.openError ?? "").font(.dyn(12)).foregroundStyle(.secondary).lineLimit(4)
             }
             .padding(24)
         }

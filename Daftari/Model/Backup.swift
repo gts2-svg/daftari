@@ -31,6 +31,7 @@ struct DaftariBackup: Codable {
         var externalID: String?
         var nagDays: Int
         var nagNext: Date?
+        var work: Bool?
     }
 
     struct MedicineCopy: Codable {
@@ -103,7 +104,7 @@ enum BackupService {
             .init(uid: $0.uid, title: $0.title, kindRaw: $0.kindRaw, date: $0.date, hasTime: $0.hasTime,
                   importanceRaw: $0.importanceRaw, isDone: $0.isDone, isCancelled: $0.isCancelled,
                   doneAt: $0.doneAt, createdAt: $0.createdAt, alarmLeadMinutes: $0.alarmLeadMinutes,
-                  snoozeUntil: $0.snoozeUntil, externalID: $0.externalID, nagDays: $0.nagDays, nagNext: $0.nagNext)
+                  snoozeUntil: $0.snoozeUntil, externalID: $0.externalID, nagDays: $0.nagDays, nagNext: $0.nagNext, work: $0.isWork)
         }
         b.medicines = Store.allMedicines().map {
             .init(uid: $0.uid, name: $0.name, doseNote: $0.doseNote, shelfDays: $0.shelfDays, openedAt: $0.openedAt,
@@ -179,7 +180,7 @@ enum BackupService {
             e.uid = c.uid; e.kindRaw = c.kindRaw; e.date = c.date; e.hasTime = c.hasTime
             e.importanceRaw = c.importanceRaw; e.isDone = c.isDone; e.isCancelled = c.isCancelled
             e.doneAt = c.doneAt; e.createdAt = c.createdAt; e.alarmLeadMinutes = c.alarmLeadMinutes
-            e.snoozeUntil = c.snoozeUntil; e.externalID = c.externalID; e.nagDays = c.nagDays; e.nagNext = c.nagNext
+            e.snoozeUntil = c.snoozeUntil; e.externalID = c.externalID; e.nagDays = c.nagDays; e.nagNext = c.nagNext; e.isWork = c.work ?? false
             ctx.insert(e); added += 1
         }
         for c in b.medicines where !haveM.contains(c.uid) {

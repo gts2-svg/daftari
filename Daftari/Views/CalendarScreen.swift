@@ -8,6 +8,8 @@ struct CalendarScreen: View {
     @AppStorage(Prefs.Key.hijriPrimary) private var hijriPrimary = true
     @State private var anchor = Date()
     @State private var selected = Date()
+    /// Which way the last month change went, so the new month slides in from that side.
+    @State private var slideForward = true
 
     private var cal: Calendar { hijriPrimary ? DF.hijri : DF.greg }
     private var other: Calendar { hijriPrimary ? DF.greg : DF.hijri }
@@ -26,6 +28,7 @@ struct CalendarScreen: View {
             }
             .background(T.bg.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+            .sensoryFeedback(.selection, trigger: anchor)
         }
     }
 
@@ -35,10 +38,12 @@ struct CalendarScreen: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
                 Text(monthTitle)
-                    .font(.dyn(24, weight: .bold))
+                    .font(.dyn(26, weight: .heavy))
                     .foregroundStyle(T.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                    .id(monthTitle)
+                    .transition(.push(from: slideForward ? .trailing : .leading))
                 Spacer()
                 navButton("chevron.backward", label: "الشهر السابق", by: -1)
                 navButton("chevron.forward", label: "الشهر التالي", by: 1)
@@ -47,8 +52,11 @@ struct CalendarScreen: View {
                 Text(otherSpan).font(.dyn(13)).foregroundStyle(T.muted)
                 Spacer()
                 Button("ارجع لليوم") {
-                    anchor = Date()
-                    selected = Date()
+                    slideForward = Date() > anchor
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                        anchor = Date()
+                        selected = Date()
+                    }
                 }
                 .font(.dyn(13, weight: .semibold))
                 .foregroundStyle(T.accent)
@@ -75,7 +83,8 @@ struct CalendarScreen: View {
     /// details under the grid never belong to a month that is off screen.
     private func moveMonth(by step: Int) {
         guard let d = cal.date(byAdding: .month, value: step, to: anchor) else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
+        slideForward = step > 0
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
             anchor = d
             if cal.isDate(Date(), equalTo: d, toGranularity: .month) {
                 selected = Date()
@@ -138,21 +147,36 @@ struct CalendarScreen: View {
                     Text(name).font(.dyn(12)).foregroundStyle(T.muted).frame(maxWidth: .infinity)
                 }
             }
-            LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                    if let day {
-                        dayCell(day, mark: marks[DF.dayKey(day)])
-                    } else {
-                        Color.clear.frame(height: 54)
+            ZStack {
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+                        if let day {
+                            dayCell(day, mark: marks[DF.dayKey(day)])
+                        } else {
+                            Color.clear.frame(height: 54)
+                        }
                     }
                 }
+                .id(DF.dayKey(interval?.start ?? anchor))
+                .transition(monthSlide)
             }
+            .clipped()
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 12)
         .card(radius: 22)
         .contentShape(Rectangle())
         .simultaneousGesture(swipe)
+    }
+
+    /// The new month comes in from the side of the arrow you pressed (or the way you swiped),
+    /// and the old one leaves from the other side — so the change is always noticed.
+    /// «التالي» sits on the left in right-to-left, which is the trailing edge.
+    private var monthSlide: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: slideForward ? .trailing : .leading).combined(with: .opacity),
+            removal: .move(edge: slideForward ? .leading : .trailing).combined(with: .opacity)
+        )
     }
 
     private func dayCell(_ day: Date, mark: Importance??) -> some View {
@@ -162,7 +186,7 @@ struct CalendarScreen: View {
         let sub = other.component(.day, from: day)
         let dotColor: Color? = {
             guard let mark else { return nil }
-            if let importance = mark { return importance == .normal ? T.normalInk : T.ink(importance) }
+            if let importance = mark { return T.strong(importance) }
             return T.systemDot
         }()
 

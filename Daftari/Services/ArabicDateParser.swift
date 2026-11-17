@@ -86,6 +86,17 @@ enum ArabicDateParser {
                                                "مساء", "مساءا", "بالليل", "الليل", "ليلا", "م"]
     private static let noonWords: Set<String> = ["الظهر", "ظهرا"]
 
+    /// A first guess for the «شغل / بيت» filter: words that mean court work.
+    /// The person can always flip it in the add sheet.
+    static func looksLikeWork(_ raw: String) -> Bool {
+        let words = Set(fold(clean(raw)).split(whereSeparator: { !$0.isLetter }).map(String.init))
+        let work: Set<String> = ["جلسه", "جلسات", "الجلسه", "دائره", "الدائره", "محكمه", "المحكمه", "حكم", "الحكم",
+                                 "احكام", "قضيه", "القضيه", "قضايا", "دعوي", "الدعوي", "دعاوي", "تسبيب", "التسبيب",
+                                 "ناجز", "دوام", "الدوام", "اجتماع", "صك", "الصك", "صكوك", "مرافعه", "الخصوم",
+                                 "المدعي", "المدعي عليه", "التفتيش", "مسوده", "معامله", "المعامله", "خطاب", "الخطاب"]
+        return !words.isDisjoint(with: work)
+    }
+
     static func parse(_ raw: String, now: Date = Date()) -> ParsedInput {
         let cleaned = clean(raw)
         let scan = Scan(fold(cleaned))

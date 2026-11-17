@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         NotificationFactory.registerCategories()
         BackgroundRefresh.register()
+        AppFont.applyAppearance()
         return true
     }
 
@@ -65,6 +66,7 @@ struct DaftariEnvironment: ViewModifier {
             .environment(\.calendar, hijriPrimary ? DF.hijri : DF.greg)
             .preferredColorScheme(.light)
             .tint(T.accent)
+            .font(.dyn(16))
     }
 }
 

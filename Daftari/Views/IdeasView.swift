@@ -25,7 +25,7 @@ struct IdeasView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("الأفكار").font(.dyn(30, weight: .bold)).foregroundStyle(T.ink)
+                    Text("الأفكار").font(.dyn(30, weight: .heavy)).foregroundStyle(T.ink)
 
                     Button {
                         AppState.shared.open(.voice(.idea))

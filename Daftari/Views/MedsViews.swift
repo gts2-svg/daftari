@@ -2,10 +2,10 @@ import SwiftUI
 import SwiftData
 
 private enum MedColors {
-    static let ink = Color(hex: 0x2F6F8F)
-    static let deep = Color(hex: 0x1F5570)
-    static let soft = Color(hex: 0xE1EEF4)
-    static let outline = Color(hex: 0xC6D9E3)
+    static let ink = Color(hex: 0x0F766E)
+    static let deep = Color(hex: 0x115E59)
+    static let soft = Color(hex: 0xCCFBF1)
+    static let outline = Color(hex: 0x99D5CC)
 }
 
 // MARK: - Today card
@@ -70,7 +70,7 @@ struct MedsTodayCard: View {
                         Spacer(minLength: 0)
                     }
                     .font(.dyn(13))
-                    .foregroundStyle(Color(hex: 0x8E2F0A))
+                    .foregroundStyle(Color(hex: 0xB91C1C))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(T.urgentSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -260,7 +260,7 @@ struct MedCard: View {
     var body: some View {
         let left = med.daysLeft(now: now)
         let urgent = (left ?? 99) <= 3
-        let color = med.openedAt == nil ? T.track : (urgent ? Color(hex: 0xB4410E) : MedColors.ink)
+        let color = med.openedAt == nil ? T.track : (urgent ? Color(hex: 0xDC2626) : MedColors.ink)
 
         VStack(alignment: .leading, spacing: 14) {
             Button {
@@ -268,7 +268,7 @@ struct MedCard: View {
             } label: {
                 HStack(spacing: 14) {
                     ZStack {
-                        Circle().stroke(Color(hex: 0xEEEDE7), lineWidth: 8)
+                        Circle().stroke(Color(hex: 0xEEF0F3), lineWidth: 8)
                         Circle()
                             .trim(from: 0, to: med.fractionLeft(now: now))
                             .stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round))

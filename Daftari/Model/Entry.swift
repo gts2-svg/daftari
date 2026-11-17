@@ -59,6 +59,8 @@ final class Entry {
     var nagDays: Int = 0
     /// The day of the next nudge (time comes from the settings).
     var nagNext: Date? = nil
+    /// «شغل» (true) or «بيت» (false) — the home screen's filter.
+    var isWork: Bool = false
 
     init(title: String, kind: EntryKind, date: Date? = nil, hasTime: Bool = false,
          importance: Importance = .normal, alarmLeadMinutes: Int = 60) {
@@ -70,6 +72,7 @@ final class Entry {
         self.importanceRaw = importance.rawValue
         self.alarmLeadMinutes = alarmLeadMinutes
         self.createdAt = Date()
+        self.isWork = ArabicDateParser.looksLikeWork(title)
     }
 
     var kind: EntryKind {

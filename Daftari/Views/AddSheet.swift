@@ -33,6 +33,9 @@ struct AddSheet: View {
     @State private var dictationBase = ""
     @State private var confirmDelete = false
     @State private var nagDays = 3
+    @State private var isWork = false
+    @State private var manualWork = false
+    @State private var showDetails = false
     @AppStorage(Prefs.Key.nag) private var nagMinutes = 17 * 60
 
     private var editing: Entry? { editingUID.flatMap { Store.entry(uid: $0) } }
@@ -46,11 +49,28 @@ struct AddSheet: View {
                     if kind != .idea && hasDate { detectedChips }
                     kindPicker
                     if kind != .idea {
-                        dateCard
-                        if !hasDate { nagCard }
+                        workPicker
                         importanceCard
                         if importance != .normal && hasDate && !AlarmService.isAuthorized { AlarmOffBanner() }
-                        if hasDate { ladderCard }
+                        if detailsVisible {
+                            dateCard
+                            if !hasDate { nagCard }
+                            if hasDate { ladderCard }
+                        } else {
+                            Button {
+                                withAnimation(.snappy(duration: 0.25)) { showDetails = true }
+                            } label: {
+                                HStack {
+                                    Text("تفاصيل أكثر: التاريخ والتذكير").font(.dyn(15, weight: .bold))
+                                    Spacer()
+                                    Image(systemName: "chevron.down").font(.dyn(13, weight: .bold))
+                                }
+                                .foregroundStyle(T.accent)
+                                .padding(.horizontal, 16).frame(minHeight: 50)
+                                .background(T.field, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     if let err = speech.errorText {
                         Text(err).font(.dyn(13)).foregroundStyle(T.urgentInk)
@@ -208,6 +228,32 @@ struct AddSheet: View {
         }
     }
 
+    /// Hidden until asked when the date was already picked up from the text (it shows in the chips).
+    private var detailsVisible: Bool { showDetails || editing != nil || !hasDate }
+
+    /// «بيت» or «شغل», guessed from the words and changeable here.
+    private var workPicker: some View {
+        HStack(spacing: 8) {
+            Text("يخص").font(.dyn(14, weight: .bold)).foregroundStyle(T.muted)
+            ForEach([false, true], id: \.self) { w in
+                let on = isWork == w
+                Button {
+                    isWork = w; manualWork = true
+                } label: {
+                    Text(w ? "الشغل" : "البيت")
+                        .font(.dyn(14, weight: on ? .bold : .regular))
+                        .foregroundStyle(on ? .white : T.ink)
+                        .padding(.horizontal, 16).frame(minHeight: 40)
+                        .background(on ? T.ink : Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(on ? .clear : T.track, lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+            Spacer()
+        }
+    }
+
     private var importanceCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("الأهمية").font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
@@ -218,14 +264,15 @@ struct AddSheet: View {
                         importance = i
                     } label: {
                         VStack(spacing: 2) {
-                            Text(i.label).font(.dyn(15, weight: on ? .bold : .semibold))
-                            Text(i.hint).font(.dyn(11))
+                            Text(i.label).font(.dyn(15, weight: on ? .heavy : .bold))
+                            Text(i.hint).font(.dyn(12))
                         }
-                        .foregroundStyle(T.ink(i))
+                        .foregroundStyle(on ? (i == .normal ? Color.white : (i == .urgent ? Color.white : T.taskInk)) : T.ink(i))
                         .frame(maxWidth: .infinity, minHeight: 64)
-                        .background(on ? T.soft(i) : Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(on ? T.ink(i) : T.outline.opacity(0.6), lineWidth: on ? 2 : 1.5))
+                        .background(on ? (i == .urgent ? T.urgent : (i == .normal ? T.ink : T.taskSoft)) : Color.white,
+                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(on ? (i == .important ? Color(hex: 0xD97706) : .clear) : T.track, lineWidth: on ? 2 : 1.5))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(on ? .isSelected : [])
@@ -254,7 +301,7 @@ struct AddSheet: View {
             Text("يذكّرك كذا").font(.dyn(13, weight: .semibold)).foregroundStyle(T.muted)
             ForEach(Array(ladder.enumerated()), id: \.offset) { _, step in
                 HStack(spacing: 8) {
-                    Circle().fill(step.strong ? T.urgentInk : Color(hex: 0xC9A15A)).frame(width: 8, height: 8)
+                    Circle().fill(step.strong ? T.urgentInk : Color(hex: 0xD97706)).frame(width: 8, height: 8)
                     Text(step.when).font(.dyn(14, weight: step.strong ? .bold : .regular))
                     Spacer()
                     Text(step.how).font(.dyn(13, weight: step.strong ? .bold : .regular))
@@ -298,7 +345,7 @@ struct AddSheet: View {
                 .font(.dyn(17, weight: .bold))
                 .foregroundStyle(trimmed.isEmpty ? T.muted : .white)
                 .frame(maxWidth: .infinity, minHeight: 56)
-                .background(trimmed.isEmpty ? T.track : T.accent, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .background(trimmed.isEmpty ? T.track : T.ink, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(trimmed.isEmpty)
@@ -335,6 +382,8 @@ struct AddSheet: View {
             if let d = e.date {
                 hasDate = true; day = d; hasTime = e.hasTime; time = d
             }
+            isWork = e.isWork
+            manualWork = true
             manualDate = true
             manualKind = true
         } else if let cu = convertUID, let src = Store.entry(uid: cu) {
@@ -373,6 +422,9 @@ struct AddSheet: View {
         }
         if !manualKind {
             kind = p.kind
+        }
+        if !manualWork {
+            isWork = ArabicDateParser.looksLikeWork(text)
         }
     }
 
@@ -413,6 +465,7 @@ struct AddSheet: View {
         entry.date = date
         entry.hasTime = date != nil && hasTime
         entry.importance = kind == .idea ? .normal : importance
+        entry.isWork = kind == .idea ? false : isWork
         entry.alarmLeadMinutes = lead
         entry.snoozeUntil = nil
         if date == nil && kind != .idea {

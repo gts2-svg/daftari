@@ -8,7 +8,7 @@ struct UrgentView: View {
     @Query(sort: \Entry.createdAt) private var entries: [Entry]
     @Environment(\.dismiss) private var dismiss
 
-    private let bg = Color(hex: 0x8E2F0A)
+    private let bg = Color(hex: 0xB91C1C)
 
     private var entry: Entry? { entries.first { $0.uid == uid } }
 

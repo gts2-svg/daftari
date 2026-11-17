@@ -2,9 +2,9 @@ import SwiftUI
 import SwiftData
 
 enum PackColors {
-    static let ink = Color(hex: 0x8A5A12)
-    static let deep = Color(hex: 0x5E3C08)
-    static let soft = Color(hex: 0xF6EBD6)
+    static let ink = Color(hex: 0x0F766E)
+    static let deep = Color(hex: 0x115E59)
+    static let soft = Color(hex: 0xCCFBF1)
 }
 
 /// «أغراضي» inside أشيائي: the list of packing lists.
@@ -84,7 +84,7 @@ struct PackRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color(hex: 0xEEEDE7), lineWidth: size / 9)
+            Circle().stroke(Color(hex: 0xEEF0F3), lineWidth: size / 9)
             Circle()
                 .trim(from: 0, to: list.fraction)
                 .stroke(list.fraction >= 1 ? T.accent : PackColors.ink,
