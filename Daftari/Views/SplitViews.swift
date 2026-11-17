@@ -859,10 +859,10 @@ struct SplitReport: View {
 
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("قطة").font(.fixed(13, weight: .semibold))).foregroundStyle(SplitColors.ink)
-                Text(trip.displayName).font(.fixed(30, weight: .bold))).foregroundStyle(T.ink)
+                Text("قطة").font(.fixed(13, weight: .semibold)).foregroundStyle(SplitColors.ink)
+                Text(trip.displayName).font(.fixed(30, weight: .bold)).foregroundStyle(T.ink)
                 Text(verbatim: "\(DF.hijriText(trip.tripDate)) · \(DF.gregText(trip.tripDate))")
-                    .font(.fixed(13))).foregroundStyle(T.muted)
+                    .font(.fixed(13)).foregroundStyle(T.muted)
             }
 
             HStack(spacing: 0) {
@@ -880,21 +880,21 @@ struct SplitReport: View {
 
             if !cats.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("في إيش انصرف").font(.fixed(17, weight: .bold))).foregroundStyle(T.ink)
+                    Text("في إيش انصرف").font(.fixed(17, weight: .bold)).foregroundStyle(T.ink)
                     SplitStripe(parts: cats.map { ($0.category.color, $0.amount) }).frame(height: 10)
                     ForEach(cats) { c in
                         HStack(spacing: 10) {
                             Image(systemName: c.category.icon)
-                                .font(.fixed(13, weight: .semibold)))
+                                .font(.fixed(13, weight: .semibold))
                                 .foregroundStyle(c.category.color)
                                 .frame(width: 30, height: 30)
                                 .background(c.category.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                            Text(c.category.label).font(.fixed(15))).foregroundStyle(T.ink)
+                            Text(c.category.label).font(.fixed(15)).foregroundStyle(T.ink)
                             Spacer()
                             Text(verbatim: "\(Int((c.amount / max(trip.total, 0.01) * 100).rounded()))٪")
-                                .font(.fixed(12))).foregroundStyle(T.muted)
+                                .font(.fixed(12)).foregroundStyle(T.muted)
                             Text(verbatim: SplitFormat.money(c.amount))
-                                .font(.fixed(15, weight: .semibold))).monospacedDigit().foregroundStyle(T.ink)
+                                .font(.fixed(15, weight: .semibold)).monospacedDigit().foregroundStyle(T.ink)
                                 .frame(minWidth: 64, alignment: .trailing)
                         }
                     }
@@ -902,28 +902,28 @@ struct SplitReport: View {
             }
 
             VStack(alignment: .leading, spacing: 14) {
-                Text("التفاصيل").font(.fixed(17, weight: .bold))).foregroundStyle(T.ink)
+                Text("التفاصيل").font(.fixed(17, weight: .bold)).foregroundStyle(T.ink)
                 ForEach(groups) { g in
                     VStack(alignment: .leading, spacing: 6) {
                         if !(g.stop.isEmpty && groups.count == 1) {
                             HStack {
                                 Text(g.stop.isEmpty ? "أخرى" : g.stop)
-                                    .font(.fixed(14, weight: .bold))).foregroundStyle(SplitColors.ink)
+                                    .font(.fixed(14, weight: .bold)).foregroundStyle(SplitColors.ink)
                                 Spacer()
                                 Text(verbatim: SplitFormat.money(g.amount))
-                                    .font(.fixed(13, weight: .semibold))).monospacedDigit().foregroundStyle(SplitColors.ink)
+                                    .font(.fixed(13, weight: .semibold)).monospacedDigit().foregroundStyle(SplitColors.ink)
                             }
                         }
                         if trip.expenses.count <= 12 { ForEach(g.items) { e in
                             HStack(spacing: 8) {
                                 Circle().fill(e.category.color).frame(width: 7, height: 7)
-                                Text(e.note).font(.fixed(14))).foregroundStyle(T.ink)
+                                Text(e.note).font(.fixed(14)).foregroundStyle(T.ink)
                                 Spacer()
                                 if e.currency != .sar {
-                                    Text(verbatim: SplitFormat.amount(e)).font(.fixed(11))).foregroundStyle(T.muted)
+                                    Text(verbatim: SplitFormat.amount(e)).font(.fixed(11)).foregroundStyle(T.muted)
                                 }
                                 Text(verbatim: SplitFormat.money(trip.riyals(e)))
-                                    .font(.fixed(14))).monospacedDigit().foregroundStyle(T.ink)
+                                    .font(.fixed(14)).monospacedDigit().foregroundStyle(T.ink)
                                     .frame(minWidth: 64, alignment: .trailing)
                             }
                         } }
@@ -934,7 +934,7 @@ struct SplitReport: View {
             }
 
             Text("المبالغ بالريال السعودي · من دفتري")
-                .font(.fixed(11))).foregroundStyle(T.muted)
+                .font(.fixed(11)).foregroundStyle(T.muted)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(36)
@@ -946,9 +946,9 @@ struct SplitReport: View {
 
     private func stat(_ title: String, _ value: String, unit: String, big: Bool) -> some View {
         VStack(spacing: 4) {
-            Text(title).font(.fixed(13))).foregroundStyle(.white.opacity(0.8))
+            Text(title).font(.fixed(13)).foregroundStyle(.white.opacity(0.8))
             Text(verbatim: value).font(.fixed(big ? 30 : 26, weight: .bold)).monospacedDigit()
-            Text(unit).font(.fixed(12))).foregroundStyle(.white.opacity(0.8))
+            Text(unit).font(.fixed(12)).foregroundStyle(.white.opacity(0.8))
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
