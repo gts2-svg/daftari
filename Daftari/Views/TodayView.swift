@@ -69,14 +69,18 @@ struct TodayView: View {
         let todayAll = Agenda.items(on: now, entries: mine).filter(shows)
         let todayOpen = todayAll.filter { !$0.isDone }
         let doneToday = todayAll.filter(\.isDone)
-        let appts = todayOpen.filter(\.isAppointment)
         let overdue = Agenda.overdue(entries: mine, now: now)
-        let tasks = overdue.map(DayItem.init(entry:)) + todayOpen.filter { !$0.isAppointment }
+        // Never folded: anything «ضروري» that is due today or late — shown once, on top, and not again below.
+        let pinned = (overdue.map(DayItem.init(entry:)) + todayOpen).filter { $0.importance == .urgent }
+        let pinnedIDs = Set(pinned.map(\.id))
+        let appts = todayOpen.filter { $0.isAppointment && !pinnedIDs.contains($0.id) }
+        let tasks = (overdue.map(DayItem.init(entry:)) + todayOpen.filter { !$0.isAppointment })
+            .filter { !pinnedIDs.contains($0.id) }
+        let overdueLeft = overdue.filter { !pinnedIDs.contains($0.uid.uuidString) }
         let pending = mine.filter(\.isPending)
         let activeMeds = filter == .work ? [] : meds.filter { !$0.courseFinished && $0.isActive(on: now) && !$0.slots.isEmpty }
         let dosesLeft = activeMeds.reduce(0) { $0 + $1.slots.count - $1.takenCount(on: now) }
-        // Never folded: anything «ضروري» that is due today or late, and a dose that is late by under 3 hours.
-        let pinned = (overdue.map(DayItem.init(entry:)) + todayOpen).filter { $0.importance == .urgent }
+        // And a dose that is late by under 3 hours.
         let lateDoses = meds.filter { !$0.courseFinished }.flatMap { m in
             m.slots.filter { m.state(now, $0, now: now) == .late && now.timeIntervalSince(m.slotDate(now, $0)) < 3 * 3600 }
                 .map { (m, $0) }
@@ -88,7 +92,9 @@ struct TodayView: View {
             filterBar
             if needsAlarm && !AlarmService.isAuthorized { AlarmOffBanner() }
             if showEveningPrompt(now: now) { eveningPrompt }
-            if let big = importantNext(after: now, entries: mine) { ImportantBox(item: big, now: now) }
+            if let big = importantNext(after: now, entries: mine.filter { !pinnedIDs.contains($0.uid.uuidString) }) {
+                ImportantBox(item: big, now: now)
+            }
 
             if !pinned.isEmpty || !lateDoses.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -117,8 +123,8 @@ struct TodayView: View {
                 }
             }
             FoldSection(id: "tasks", title: "المهام", count: tasks.count,
-                        alert: !overdue.isEmpty || tasks.contains { $0.importance == .urgent }, openID: $openID) {
-                if tasks.isEmpty { emptyLine("ما عندك مهام اليوم.") } else { rows(tasks, showDay: !overdue.isEmpty) }
+                        alert: !overdueLeft.isEmpty, openID: $openID) {
+                if tasks.isEmpty { emptyLine("ما عندك مهام اليوم.") } else { rows(tasks, showDay: !overdueLeft.isEmpty) }
                 linkLine("كل المهام") { showTasks = true }
             }
             if !pending.isEmpty {
