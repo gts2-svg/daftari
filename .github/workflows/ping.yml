@@ -1,0 +1,13 @@
+name: ping
+on:
+  push:
+    branches: [ping-test]
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo linux ok
+  mac:
+    runs-on: macos-15
+    steps:
+      - run: echo mac ok
