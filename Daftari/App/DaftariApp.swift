@@ -58,15 +58,25 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
 struct DaftariEnvironment: ViewModifier {
     @AppStorage(Prefs.Key.hijriPrimary) private var hijriPrimary = true
+    @AppStorage(TextSizeChoice.key) private var textSize = TextSizeChoice.medium.rawValue
 
     func body(content: Content) -> some View {
-        content
+        sized(content)
             .environment(\.layoutDirection, .rightToLeft)
             .environment(\.locale, DF.locale)
             .environment(\.calendar, hijriPrimary ? DF.hijri : DF.greg)
             .preferredColorScheme(.light)
             .tint(T.accent)
             .font(.dyn(16))
+    }
+
+    @ViewBuilder
+    private func sized(_ content: Content) -> some View {
+        if let size = (TextSizeChoice(rawValue: textSize) ?? .medium).dynamicSize {
+            content.dynamicTypeSize(size)
+        } else {
+            content.dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        }
     }
 }
 

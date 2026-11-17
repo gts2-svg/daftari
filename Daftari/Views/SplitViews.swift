@@ -728,7 +728,7 @@ struct SplitExpenseSheet: View {
                     HStack(spacing: 8) {
                         TextField("المبلغ", text: $amountText)
                             .keyboardType(.decimalPad)
-                            .font(.dyn(30, weight: .heavy)).monospacedDigit()
+                            .font(.dyn(28, weight: .bold)).monospacedDigit()
                         Picker("العملة", selection: $expense.currency) {
                             ForEach(SplitCurrency.allCases) { c in Text("\(c.name) \(c.symbol)").tag(c) }
                         }

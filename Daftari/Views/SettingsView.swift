@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.Key.useSystemCalendar) private var useSystemCalendar = true
     @AppStorage(Prefs.Key.defaultLead) private var defaultLead = 60
     @AppStorage(Prefs.Key.importReminders) private var importReminders = false
+    @AppStorage(TextSizeChoice.key) private var textSize = TextSizeChoice.medium.rawValue
     @State private var remindersNote: String?
 
     @State private var notifOK = false
@@ -47,6 +48,23 @@ struct SettingsView: View {
                     Text("الأوقات اليومية")
                 } footer: {
                     Text("إذا ما سجّلت يومك، يذكّرك مرة ثانية بعد ساعة ونص. «المعلّقة» هي المهام اللي ما لها تاريخ.")
+                }
+
+                Section {
+                    Picker("حجم الخط", selection: $textSize) {
+                        ForEach(TextSizeChoice.allCases, id: \.self) { c in
+                            Text(c.label).tag(c.rawValue)
+                        }
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("جلسة الديوان").font(.dyn(16, weight: .bold))
+                        Text("الثلاثاء 13 رجب · 10:00 ص").font(.dyn(14)).foregroundStyle(T.muted)
+                    }
+                    .padding(.vertical, 4)
+                } header: {
+                    Text("حجم الخط")
+                } footer: {
+                    Text("يتغير في كل دفتري على طول. «مثل الجوال» يتبع حجم النص في إعدادات الآيفون.")
                 }
 
                 Section("العرض") {

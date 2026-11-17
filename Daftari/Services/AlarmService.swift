@@ -46,7 +46,9 @@ enum AlarmService {
             var fires: [(Date, String)] = []
             if e.alarmLeadMinutes > 0 {
                 let early = anchor.addingTimeInterval(TimeInterval(-60 * e.alarmLeadMinutes))
-                fires.append((early, "\(e.title) · \(when)"))
+                let ahead = DF.daysBetween(early, anchor) > 0
+                    ? DF.whenText(anchor, hasTime: e.hasTime, now: early) : when
+                fires.append((early, "\(e.title) · \(ahead)"))
             }
             fires.append((anchor, "\(e.title) · الآن"))
             if let snooze = e.snoozeUntil {

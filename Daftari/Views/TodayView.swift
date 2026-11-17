@@ -114,18 +114,22 @@ struct TodayView: View {
                 }
             }
 
-            FoldSection(id: "appts", title: "المواعيد اليوم", count: appts.count, openID: $openID) {
-                if appts.isEmpty { emptyLine("ما عندك مواعيد اليوم.") } else { rows(appts) }
+            if !appts.isEmpty {
+                FoldSection(id: "appts", title: "المواعيد اليوم", count: appts.count, openID: $openID) {
+                    rows(appts)
+                }
             }
             if !activeMeds.isEmpty {
                 FoldSection(id: "meds", title: "الأدوية", count: dosesLeft, countLabel: dosesLeft == 0 ? "تمّت" : nil, openID: $openID) {
                     MedsDoseList(meds: activeMeds, now: now)
                 }
             }
-            FoldSection(id: "tasks", title: "المهام", count: tasks.count,
-                        alert: !overdueLeft.isEmpty, openID: $openID) {
-                if tasks.isEmpty { emptyLine("ما عندك مهام اليوم.") } else { rows(tasks, showDay: !overdueLeft.isEmpty) }
-                linkLine("كل المهام") { showTasks = true }
+            if !tasks.isEmpty {
+                FoldSection(id: "tasks", title: "المهام", count: tasks.count,
+                            alert: !overdueLeft.isEmpty, openID: $openID) {
+                    rows(tasks, showDay: !overdueLeft.isEmpty)
+                    linkLine("كل المهام") { showTasks = true }
+                }
             }
             if !pending.isEmpty {
                 FoldSection(id: "pending", title: "معلّقة بدون وقت", count: pending.count, openID: $openID) {
@@ -137,8 +141,8 @@ struct TodayView: View {
                     rows(doneToday)
                 }
             }
-            if todayAll.isEmpty && pending.isEmpty && activeMeds.isEmpty && overdue.isEmpty {
-                Text("يومك فاضي. اضغط «أضف أي شي» تحت، أو قله بصوتك.")
+            if appts.isEmpty && tasks.isEmpty {
+                Text(pinned.isEmpty ? "ما عندك مواعيد ولا مهام اليوم." : "ما عندك غيرها اليوم.")
                     .font(.dyn(14)).foregroundStyle(T.muted)
                     .padding(.top, 4)
             }
@@ -188,7 +192,7 @@ struct TodayView: View {
     private func header(now: Date) -> some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(DF.weekday(now)).font(.dyn(28, weight: .heavy)).foregroundStyle(T.ink)
+                Text(DF.weekday(now)).font(.dyn(28, weight: .bold)).foregroundStyle(T.ink)
                 Text(DF.fullDate(now, year: false)).font(.dyn(14)).foregroundStyle(T.muted)
             }
             Spacer()
@@ -310,6 +314,7 @@ struct FoldSection<Content: View>: View {
                 HStack(spacing: 10) {
                     Text(title)
                         .font(.dyn(16, weight: .bold))
+                        .lineLimit(1)
                         .foregroundStyle(quiet ? T.muted : T.ink)
                     Spacer()
                     Text(countLabel ?? "\(count)")

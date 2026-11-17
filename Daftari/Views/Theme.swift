@@ -1,11 +1,10 @@
 import SwiftUI
 
 extension Font {
-    /// Almarai, following the phone's text size setting (Settings › Display › Text Size),
-    /// capped so very large settings don't break the layout.
+    /// Almarai, scaled by the text size chosen in دفتري's settings («حجم الخط»).
+    /// Almarai looks bigger than the iPhone font at the same size, so sizes are trimmed a little.
     static func dyn(_ size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
-        let scaled = UIFontMetrics(forTextStyle: .body).scaledValue(for: size)
-        return .custom(AppFont.name(weight), fixedSize: min(scaled, size * 1.6))
+        .custom(AppFont.name(weight), size: (size * 0.92).rounded(), relativeTo: .body)
     }
 
     /// Almarai at a fixed size (the PDF report must not grow with the text size setting).
@@ -14,11 +13,39 @@ extension Font {
     }
 }
 
+/// «حجم الخط» in the settings: the app's own text size, apart from the phone's.
+enum TextSizeChoice: Int, CaseIterable {
+    case small = 0, medium = 1, large = 2, larger = 3, phone = 4
+
+    static let key = "textSize"
+
+    var label: String {
+        switch self {
+        case .small: return "صغير"
+        case .medium: return "متوسط"
+        case .large: return "كبير"
+        case .larger: return "أكبر"
+        case .phone: return "مثل الجوال"
+        }
+    }
+
+    var dynamicSize: DynamicTypeSize? {
+        switch self {
+        case .small: return .small
+        case .medium: return .large
+        case .large: return .xLarge
+        case .larger: return .xxLarge
+        case .phone: return nil
+        }
+    }
+}
+
 enum AppFont {
     static func name(_ weight: Font.Weight) -> String {
         switch weight {
+        // Almarai has no medium or semibold: those stay regular, so only real titles look bold.
         case .ultraLight, .thin, .light: return "Almarai-Light"
-        case .semibold, .bold: return "Almarai-Bold"
+        case .bold: return "Almarai-Bold"
         case .heavy, .black: return "Almarai-ExtraBold"
         default: return "Almarai-Regular"
         }

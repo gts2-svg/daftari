@@ -38,7 +38,7 @@ struct CalendarScreen: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
                 Text(monthTitle)
-                    .font(.dyn(26, weight: .heavy))
+                    .font(.dyn(24, weight: .bold))
                     .foregroundStyle(T.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
