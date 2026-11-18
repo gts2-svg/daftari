@@ -1,0 +1,61 @@
+name: retry-mac
+
+# GitHub's hosted macOS machines are scarce: a job waits 15 minutes and is cancelled
+# when no machine picks it up. This cheap Linux job runs every 15 minutes and re-sends
+# the build until it gets a machine: TestFlight.
+# It stops by itself once it has succeeded for the current commit on main, and it
+# never retries a real failure (only a run that was cancelled without ever getting a machine).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: retry-mac
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -eu
+          # The newest commit that changed the app; workflow-only commits need no rebuild.
+          head=$(gh api "repos/$REPO/commits?sha=main&path=Daftari&per_page=1" -q '.[0].sha')
+          echo "last app change is $head"
+          for wf in testflight; do
+            last=$(gh api "repos/$REPO/actions/workflows/$wf.yml/runs?branch=main&per_page=1" \
+                     -q '.workflow_runs[0] | "\(.id) \(.status) \(.conclusion) \(.head_sha)"')
+            read -r id status conclusion sha <<< "$last"
+            echo "$wf: run $id $status $conclusion on $sha"
+            if [ "$status" != "completed" ]; then
+              echo "$wf is still waiting or running; nothing to do now."; exit 0
+            fi
+            # Does that run's commit already contain the last app change?
+            cmp=$(gh api "repos/$REPO/compare/$head...$sha" -q .status)
+            if [ "$cmp" = "ahead" ] || [ "$cmp" = "identical" ]; then sha=$head; fi
+            if [ "$sha" = "$head" ] && [ "$conclusion" = "success" ]; then
+              echo "$wf already succeeded for this commit."; continue
+            fi
+            if [ "$sha" = "$head" ]; then
+              # Same commit and not a success: retry only if no macOS job of that run
+              # ever got a machine (GitHub marks those runs failed or cancelled).
+              started=$(gh api "repos/$REPO/actions/runs/$id/jobs" \
+                          -q '[.jobs[] | select(.labels[0] | startswith("macos")) | select(.runner_name != null and .runner_name != "")] | length')
+              if [ "$started" != "0" ]; then
+                echo "$wf ran on a machine and ended $conclusion; not retrying."; exit 0
+              fi
+            fi
+            echo "Sending $wf again."
+            gh workflow run "$wf.yml" --ref main -R "$REPO"
+            exit 0
+          done
+          echo "The build is done for $head. Nothing to retry."
