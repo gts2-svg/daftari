@@ -9,12 +9,12 @@ enum Store {
 
     static let container: ModelContainer = {
         do {
-            return try ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self)
+            return try ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self, Period.self)
         } catch {
             openError = "\(error)"
             let memory = ModelConfiguration(isStoredInMemoryOnly: true)
             // An in-memory container with the same models cannot fail for schema reasons.
-            return try! ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self,
+            return try! ModelContainer(for: Entry.self, Medicine.self, PackList.self, SplitTrip.self, Period.self,
                                        configurations: memory)
         }
     }()
@@ -55,6 +55,10 @@ enum Store {
 
     static func allTrips() -> [SplitTrip] {
         (try? context.fetch(FetchDescriptor<SplitTrip>())) ?? []
+    }
+
+    static func allPeriods() -> [Period] {
+        (try? context.fetch(FetchDescriptor<Period>())) ?? []
     }
 
     /// Last save failure, shown in Settings so a silent failure doesn't go unnoticed.

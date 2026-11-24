@@ -59,6 +59,7 @@ final class Scheduler {
         for e in open { all += requests(for: e, now: now) }
         all += nagRequests(entries: entries, now: now).map { ($0.0, Tier.rest, $0.1) }
         all += packRequests(Store.allPackLists(), now: now).map { ($0.0, Tier.soon, $0.1) }
+        all += periodRequests(Store.allPeriods(), now: now)
         all += medicineRequests(meds, now: now)
         all += dailyRequests(entries: entries, now: now)
 
@@ -267,6 +268,45 @@ final class Scheduler {
                     id: "pack-\(l.uid.uuidString)-day", at: morning, title: "اليوم طلعتك: \(l.displayName)",
                     body: "لا تنسى: \(names)\(more)",
                     sensitive: true, category: "PACK", uid: nil, extra: info)))
+            }
+        }
+        return out
+    }
+
+    // MARK: - periods («فترة»)
+
+    /// The start, each milestone and the last day: in the morning of the day, and for «مهم» and «ضروري»
+    /// also the evening before. A milestone on the first day is folded into the start note.
+    private func periodRequests(_ periods: [Period], now: Date) -> [(Date, Tier, UNNotificationRequest)] {
+        var out: [(Date, Tier, UNNotificationRequest)] = []
+        let morningOffset = TimeInterval(Prefs.morningMinutes * 60)
+        for p in periods where p.endDay >= DF.startOfDay(now) {
+            let id = p.uid.uuidString
+            let name = p.displayTitle
+            let info: [String: Any] = ["period": id]
+            func add(_ key: String, _ day: Date, _ title: String, _ body: String) {
+                let morning = DF.startOfDay(day).addingTimeInterval(morningOffset)
+                if morning > now {
+                    out.append((morning, .own, NotificationFactory.request(
+                        id: "period-\(id)-\(key)", at: morning, title: title, body: body,
+                        sensitive: p.importance != .normal, category: "PERIOD", uid: nil, extra: info)))
+                }
+                if p.importance != .normal,
+                   let eve = DF.greg.date(bySettingHour: 20, minute: 0, second: 0, of: DF.addDays(-1, to: DF.startOfDay(day))),
+                   eve > now {
+                    out.append((eve, .rest, NotificationFactory.request(
+                        id: "period-\(id)-\(key)-eve", at: eve, title: "بكرة: \(title)", body: body,
+                        sensitive: true, category: "PERIOD", uid: nil, extra: info)))
+                }
+            }
+            let firstDayStones = p.milestones.filter { DF.greg.isDate($0.day, inSameDayAs: p.startDay) }
+            let startBody = ([p.spanText] + firstDayStones.map(\.title)).joined(separator: " · ")
+            add("start", p.startDay, "تبدأ: \(name)", startBody)
+            for m in p.milestones where !DF.greg.isDate(m.day, inSameDayAs: p.startDay) && p.contains(m.day) {
+                add("m-\(m.id.uuidString)", m.day, m.title, name)
+            }
+            if p.length > 1 {
+                add("end", p.endDay, "آخر يوم: \(name)", "اليوم \(p.length) من \(p.length)")
             }
         }
         return out

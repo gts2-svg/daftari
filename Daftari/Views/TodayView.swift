@@ -18,6 +18,7 @@ enum HomeFilter: Int, CaseIterable {
 struct TodayView: View {
     @Query(sort: \Entry.createdAt) private var entries: [Entry]
     @Query(sort: \Medicine.createdAt) private var meds: [Medicine]
+    @Query(sort: \Period.start) private var periods: [Period]
     @ObservedObject private var app = AppState.shared
     @State private var showTasks = false
     @State private var showSearch = false
@@ -51,6 +52,25 @@ struct TodayView: View {
         case .all: return true
         case .work: return e.isWork
         case .home: return !e.isWork
+        }
+    }
+
+    /// Running now, or starting within two weeks.
+    private func homePeriods(now: Date) -> [Period] {
+        periods.filter { p in
+            switch filter {
+            case .all: break
+            case .work: if !p.isWork { return false }
+            case .home: if p.isWork { return false }
+            }
+            switch p.status(now) {
+            case .running: return true
+            case .upcoming(let n): return n <= 14
+            case .finished: return false
+            }
+        }
+        .sorted { a, b in
+            a.importanceRaw != b.importanceRaw ? a.importanceRaw > b.importanceRaw : a.startDay < b.startDay
         }
     }
 
@@ -90,6 +110,17 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 14) {
             header(now: now)
             filterBar
+            let nowPeriods = homePeriods(now: now)
+            if !nowPeriods.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(nowPeriods.enumerated()), id: \.element.uid) { idx, p in
+                        if idx > 0 { Divider().overlay(T.line).padding(.leading, 16) }
+                        PeriodRow(period: p, now: now)
+                    }
+                }
+                .padding(.vertical, 2)
+                .card()
+            }
             if needsAlarm && !AlarmService.isAuthorized { AlarmOffBanner() }
             if showEveningPrompt(now: now) { eveningPrompt }
             if let big = importantNext(after: now, entries: mine.filter { !pinnedIDs.contains($0.uid.uuidString) }) {

@@ -11,6 +11,8 @@ struct DaftariBackup: Codable {
     var medicines: [MedicineCopy] = []
     var packs: [PackCopy] = []
     var trips: [TripCopy] = []
+    /// Missing in copies made before «الفترات» existed.
+    var periods: [PeriodCopy]? = nil
     var prefsInt: [String: Int] = [:]
     var prefsBool: [String: Bool] = [:]
     var prefsString: [String: String] = [:]
@@ -68,12 +70,24 @@ struct DaftariBackup: Codable {
         var currentStop: String
     }
 
+    struct PeriodCopy: Codable {
+        var uid: UUID
+        var title: String
+        var start: Date
+        var end: Date
+        var importanceRaw: Int
+        var busyMask: Int
+        var milestonesData: Data
+        var isWork: Bool
+        var createdAt: Date
+    }
+
     var counts: (entries: Int, medicines: Int, packs: Int, trips: Int) {
         (entries.count, medicines.count, packs.count, trips.count)
     }
 
     var summary: String {
-        "\(entries.count) عنصر · \(medicines.count) دواء · \(packs.count) قائمة · \(trips.count) قطة"
+        "\(entries.count) عنصر · \(medicines.count) دواء · \(packs.count) قائمة · \(trips.count) قطة · \(periods?.count ?? 0) فترة"
     }
 }
 
@@ -118,6 +132,10 @@ enum BackupService {
             .init(uid: $0.uid, name: $0.name, tripDate: $0.tripDate, createdAt: $0.createdAt, modeRaw: $0.modeRaw,
                   peopleData: $0.peopleData, expensesData: $0.expensesData, ratesData: $0.ratesData,
                   currentStop: $0.currentStop)
+        }
+        b.periods = Store.allPeriods().map {
+            .init(uid: $0.uid, title: $0.title, start: $0.start, end: $0.end, importanceRaw: $0.importanceRaw,
+                  busyMask: $0.busyMask, milestonesData: $0.milestonesData, isWork: $0.isWork, createdAt: $0.createdAt)
         }
         let d = UserDefaults.standard
         for k in intKeys { if let v = d.object(forKey: k) as? Int { b.prefsInt[k] = v } }
@@ -168,11 +186,13 @@ enum BackupService {
             Store.allMedicines().forEach { ctx.delete($0) }
             Store.allPackLists().forEach { ctx.delete($0) }
             Store.allTrips().forEach { ctx.delete($0) }
+            Store.allPeriods().forEach { ctx.delete($0) }
         }
         let haveE = replace ? [] : Set(Store.allEntries().map(\.uid))
         let haveM = replace ? [] : Set(Store.allMedicines().map(\.uid))
         let haveP = replace ? [] : Set(Store.allPackLists().map(\.uid))
         let haveT = replace ? [] : Set(Store.allTrips().map(\.uid))
+        let haveR = replace ? [] : Set(Store.allPeriods().map(\.uid))
         var added = 0
 
         for c in b.entries where !haveE.contains(c.uid) {
@@ -201,6 +221,12 @@ enum BackupService {
             t.peopleData = c.peopleData; t.expensesData = c.expensesData; t.ratesData = c.ratesData
             t.currentStop = c.currentStop
             ctx.insert(t); added += 1
+        }
+        for c in b.periods ?? [] where !haveR.contains(c.uid) {
+            let r = Period(title: c.title, start: c.start, end: c.end)
+            r.uid = c.uid; r.importanceRaw = c.importanceRaw; r.busyMask = c.busyMask
+            r.milestonesData = c.milestonesData; r.isWork = c.isWork; r.createdAt = c.createdAt
+            ctx.insert(r); added += 1
         }
         let d = UserDefaults.standard
         if replace {

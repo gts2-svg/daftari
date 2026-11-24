@@ -17,6 +17,8 @@ enum Route: Identifiable, Equatable {
     case settings
     case medicine(UUID?)
     case urgent(UUID)
+    /// A period: existing one by uid, or a new one starting on a day with a title.
+    case period(UUID?, start: Date?, title: String)
 
     var id: String {
         switch self {
@@ -29,6 +31,7 @@ enum Route: Identifiable, Equatable {
         case .morning: return "morning"
         case .settings: return "settings"
         case .urgent(let u): return "urgent-\(u.uuidString)"
+        case .period(let u, _, _): return "period-\(u?.uuidString ?? "new")"
         }
     }
 }

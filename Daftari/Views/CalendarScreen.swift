@@ -5,6 +5,7 @@ import SwiftData
 /// and the other calendar small, coloured dots, and the chosen day underneath.
 struct CalendarScreen: View {
     @Query(sort: \Entry.createdAt) private var entries: [Entry]
+    @Query(sort: \Period.start) private var periods: [Period]
     @AppStorage(Prefs.Key.hijriPrimary) private var hijriPrimary = true
     @State private var anchor = Date()
     @State private var selected = Date()
@@ -140,6 +141,10 @@ struct CalendarScreen: View {
         let interval = cal.dateInterval(of: .month, for: anchor)
         let marks = Agenda.marks(entries: entries, from: interval?.start ?? anchor, to: interval?.end ?? anchor)
         let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+        let monthPeriods = periods.filter { $0.overlaps(from: interval?.start ?? anchor, to: interval?.end ?? anchor) }
+        let laneOf = PeriodActions.lanes(monthPeriods)
+        let laneCount = (laneOf.values.max() ?? -1) + 1
+        let weeks: [[Date?]] = stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<min($0 + 7, days.count)]) }
 
         return VStack(spacing: 6) {
             LazyVGrid(columns: columns, spacing: 0) {
@@ -148,12 +153,27 @@ struct CalendarScreen: View {
                 }
             }
             ZStack {
-                LazyVGrid(columns: columns, spacing: 4) {
-                    ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                        if let day {
-                            dayCell(day, mark: marks[DF.dayKey(day)])
-                        } else {
-                            Color.clear.frame(height: 54)
+                VStack(spacing: 4) {
+                    ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
+                        VStack(spacing: 2) {
+                            HStack(spacing: 0) {
+                                ForEach(0..<7, id: \.self) { i in
+                                    if i < week.count, let day = week[i] {
+                                        dayCell(day, mark: marks[DF.dayKey(day)])
+                                    } else {
+                                        Color.clear.frame(maxWidth: .infinity, minHeight: 54)
+                                    }
+                                }
+                            }
+                            // One joined bar per period, in the colour of its importance.
+                            ForEach(0..<laneCount, id: \.self) { lane in
+                                if let p = monthPeriods.first(where: { p in
+                                    laneOf[p.uid] == lane && week.contains { d in d.map(p.contains) ?? false }
+                                }) {
+                                    PeriodLane(week: week, period: p)
+                                        .padding(.horizontal, 2)
+                                }
+                            }
                         }
                     }
                 }
@@ -223,6 +243,7 @@ struct CalendarScreen: View {
 
     private var dayDetail: some View {
         let items = Agenda.items(on: selected, entries: entries)
+        let dayPeriods = periods.filter { $0.contains(selected) }
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -242,11 +263,21 @@ struct CalendarScreen: View {
                         .card(T.accentSoft, radius: 14)
                 }
             }
-            if items.isEmpty {
+            if !dayPeriods.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(dayPeriods.enumerated()), id: \.element.uid) { idx, p in
+                        if idx > 0 { Divider().overlay(T.line).padding(.leading, 16) }
+                        PeriodRow(period: p, now: selected)
+                    }
+                }
+                .padding(.vertical, 2)
+                .card()
+            }
+            if items.isEmpty && dayPeriods.isEmpty {
                 Text("ما فيه شيء في هذا اليوم.")
                     .font(.dyn(14)).foregroundStyle(T.muted)
                     .padding(.vertical, 8)
-            } else {
+            } else if !items.isEmpty {
                 ItemList(items: items)
             }
         }

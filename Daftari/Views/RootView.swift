@@ -67,6 +67,8 @@ struct RootView: View {
             SettingsView()
         case .medicine(let uid):
             MedicineSheet(editingUID: uid)
+        case .period(let uid, let start, let title):
+            PeriodSheet(editingUID: uid, presetStart: start, presetTitle: title)
         case .voice, .urgent:
             EmptyView()
         }

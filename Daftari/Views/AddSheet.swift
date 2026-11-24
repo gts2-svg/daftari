@@ -155,12 +155,32 @@ struct AddSheet: View {
     }
 
     private var kindPicker: some View {
-        Picker("النوع", selection: Binding(get: { kind }, set: { kind = $0; manualKind = true })) {
+        Picker("النوع", selection: Binding<Int>(
+            get: { kind.rawValue },
+            set: { v in
+                if v == -1 { startPeriod(); return }
+                kind = EntryKind(rawValue: v) ?? .task
+                manualKind = true
+            }
+        )) {
             ForEach([EntryKind.appointment, .task, .idea], id: \.self) { k in
-                Text(k.label).tag(k)
+                Text(k.label).tag(k.rawValue)
+            }
+            if editing == nil && convertUID == nil {
+                Text("فترة").tag(-1)
             }
         }
         .pickerStyle(.segmented)
+    }
+
+    /// «فترة» has its own screen (start, end, days, milestones): carry the words and the day over.
+    private func startPeriod() {
+        speech.cancel()
+        let start = hasDate ? DF.startOfDay(day) : DF.startOfDay(presetDate ?? Date())
+        let parsed = ArabicDateParser.parse(text)
+        let title = parsed.date != nil && !parsed.title.isEmpty ? parsed.title : trimmed
+        AppState.shared.openAfterDismiss(.period(nil, start: start, title: title))
+        dismiss()
     }
 
     private var dateCard: some View {
@@ -505,8 +525,12 @@ struct AddSheet: View {
                 hits.append("«\(ev.title ?? "موعد")» الساعة \(DF.time(ev.startDate))")
             }
         }
-        guard !hits.isEmpty else { return nil }
-        return "عندك في نفس الوقت تقريباً: " + hits.prefix(3).joined(separator: "، ")
+        // An appointment on a day a period takes («أيام الارتباط»).
+        let busy = kind == .appointment ? Store.allPeriods().filter { $0.isBusy(date) }.map { "«\($0.displayTitle)»" } : []
+        let inPeriod = busy.isEmpty ? nil : "هذا اليوم داخل فترة " + busy.prefix(2).joined(separator: " و")
+        guard !hits.isEmpty else { return inPeriod }
+        let same = "عندك في نفس الوقت تقريباً: " + hits.prefix(3).joined(separator: "، ")
+        return inPeriod.map { same + "، و" + $0 } ?? same
     }
 
     private var apologyText: String {

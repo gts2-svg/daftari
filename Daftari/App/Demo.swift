@@ -21,6 +21,12 @@ enum Demo {
         let app = AppState.shared
         switch screen {
         case "calendar": app.tab = 1
+        case "period":
+            app.tab = 1
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            if let p = Store.allPeriods().first(where: { $0.importance == .urgent }) {
+                app.open(.period(p.uid, start: nil, title: ""))
+            }
         case "ideas": app.tab = 2
         case "things", "meds": app.tab = 3
         case "medadd": app.tab = 3; app.open(.medicine(nil))
@@ -139,6 +145,17 @@ enum Demo {
         madrid.addLines("85 يورو عشاء\nتاكسي 30 €", currency: .sar, payer: mp[1].id)
         madrid.addLines("قهوة 12", currency: .eur, payer: mp[2].id)
         ctx.insert(madrid)
+
+        let today0 = DF.startOfDay(Date())
+        let course = Period(title: "دورة تدريبية", start: DF.addDays(-11, to: today0), end: DF.addDays(24, to: today0))
+        course.importance = .urgent
+        course.busyMask = 0b0011111
+        course.milestones = [PeriodMilestone(title: "بداية الحضوري", day: DF.addDays(4, to: today0))]
+        course.isWork = true
+        ctx.insert(course)
+        let trip = Period(title: "سفرة الشمال", start: DF.addDays(-9, to: today0), end: DF.addDays(-5, to: today0))
+        trip.importance = .important
+        ctx.insert(trip)
         try? ctx.save()
     }
 }

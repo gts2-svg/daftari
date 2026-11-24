@@ -59,7 +59,7 @@ jobs:
           APP=$(find build/Build/Products -name "Daftari.app" -maxdepth 3 | head -1)
           xcrun simctl install "$UDID" "$APP"
           mkdir -p "$RUNNER_TEMP/shots"
-          for s in today calendar ideas meds packs add nag evening settings split; do
+          for s in today calendar period ideas meds packs add nag evening settings split; do
             xcrun simctl terminate "$UDID" com.gts2svg.daftari.9QR9KTSAZ9 || true
             SIMCTL_CHILD_TZ=Asia/Riyadh xcrun simctl launch "$UDID" com.gts2svg.daftari.9QR9KTSAZ9 -demo -screen "$s"
             sleep 22
