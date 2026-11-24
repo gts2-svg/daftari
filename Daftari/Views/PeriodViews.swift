@@ -62,7 +62,7 @@ struct PeriodLane: View {
     @ViewBuilder
     private func piece(_ i: Int) -> some View {
         if let period, let day = week[i], period.contains(day) {
-            let color = period.isBusy(day) ? period.barColor : period.barColor.opacity(0.35)
+            let color = period.barColor
             let isStart = DF.greg.isDate(day, inSameDayAs: period.startDay)
             let isEnd = DF.greg.isDate(day, inSameDayAs: period.endDay)
             let isStone = period.milestones.contains { DF.greg.isDate($0.day, inSameDayAs: day) } && !isStart
@@ -83,6 +83,9 @@ struct PeriodLane: View {
                     Circle().fill(.white).frame(width: 6, height: 6)
                 }
             }
+            // Fade the whole piece at once, so the overlapping shapes at an end don't show darker.
+            .compositingGroup()
+            .opacity(period.isBusy(day) ? 1 : 0.35)
         } else {
             Color.clear
         }
