@@ -119,7 +119,7 @@ enum Demo {
         trip.toggle(trip.items[2].id)
         trip.toggle(trip.items[5].id)
         trip.tripDate = DF.addDays(3, to: today)
-        ctx.insert(trip)
+        ctx.insert(northTrip)
         let travel = PackList(name: "السفر")
         travel.add("الجواز\nالشاحن\nأدويتي")
         ctx.insert(travel)
@@ -153,9 +153,9 @@ enum Demo {
         course.milestones = [PeriodMilestone(title: "بداية الحضوري", day: DF.addDays(4, to: today0))]
         course.isWork = true
         ctx.insert(course)
-        let trip = Period(title: "سفرة الشمال", start: DF.addDays(-9, to: today0), end: DF.addDays(-5, to: today0))
-        trip.importance = .important
-        ctx.insert(trip)
+        let northTrip = Period(title: "سفرة الشمال", start: DF.addDays(-9, to: today0), end: DF.addDays(-5, to: today0))
+        northTrip.importance = .important
+        ctx.insert(northTrip)
         try? ctx.save()
     }
 }
