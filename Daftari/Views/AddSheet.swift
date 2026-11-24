@@ -188,8 +188,7 @@ struct AddSheet: View {
             Toggle("له تاريخ", isOn: Binding(get: { hasDate }, set: { hasDate = $0; manualDate = true }))
                 .font(.dyn(15, weight: .semibold))
             if hasDate {
-                DatePicker("اليوم", selection: Binding(get: { day }, set: { day = $0; manualDate = true }),
-                           displayedComponents: .date)
+                DayField(label: "اليوم", date: Binding(get: { day }, set: { day = $0; manualDate = true }))
                 Text(verbatim: "\(DF.weekday(day)) · \(DF.fullDate(day))")
                     .font(.dyn(13)).foregroundStyle(T.muted)
                 Toggle("له وقت", isOn: Binding(get: { hasTime }, set: { hasTime = $0; manualDate = true }))

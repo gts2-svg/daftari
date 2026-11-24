@@ -418,7 +418,7 @@ struct MedicineSheet: View {
                             Text("فتحت العلبة").font(.dyn(15, weight: .bold))
                         }
                         if opened {
-                            DatePicker("يوم الفتح", selection: $openedDay, in: ...Date(), displayedComponents: .date)
+                            DayField(label: "يوم الفتح", date: $openedDay, to: Date())
                             Text("فتحتها \(DF.fullDate(openedDay)) · تنتهي \(DF.dayMonth(DF.addDays(shelfDays, to: DF.startOfDay(openedDay)), cal: DF.primary))")
                                 .font(.dyn(12)).foregroundStyle(T.muted)
                         } else {
@@ -514,7 +514,7 @@ struct MedicineSheet: View {
                             choice("لين تاريخ", on: course == -1) { course = -1 }
                         }
                         if course == -1 {
-                            DatePicker("آخر يوم", selection: $courseEnd, displayedComponents: .date)
+                            DayField(label: "آخر يوم", date: $courseEnd)
                         }
                     }
                 }

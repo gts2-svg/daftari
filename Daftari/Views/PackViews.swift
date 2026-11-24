@@ -248,10 +248,10 @@ struct PackListDetail: View {
             ))
             .font(.dyn(15, weight: .semibold))
             if let trip = list.tripDate {
-                DatePicker("يوم الطلعة", selection: Binding(
+                DayField(label: "يوم الطلعة", date: Binding(
                     get: { trip },
                     set: { list.tripDate = DF.startOfDay($0); PackActions.commit() }
-                ), displayedComponents: .date)
+                ))
                 Text(verbatim: "\(DF.weekday(trip)) · \(DF.fullDate(trip))")
                     .font(.dyn(12)).foregroundStyle(T.muted)
                 Text("يذكّرك الليلة اللي قبلها الساعة 8:00 م، وصباح يوم الطلعة، بالأغراض اللي ما علّمت عليها.")

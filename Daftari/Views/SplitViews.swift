@@ -147,22 +147,10 @@ struct SplitTripDetail: View {
         }
         .sheet(isPresented: $pickDate) {
             if let trip {
-                NavigationStack {
-                    DatePicker("تاريخ السفرة", selection: Binding(
-                        get: { trip.tripDate },
-                        set: { trip.tripDate = DF.startOfDay($0); SplitActions.commit() }
-                    ), displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .tint(SplitColors.ink)
-                    .padding(.horizontal, 16)
-                    .navigationTitle("تاريخ السفرة")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) { Button("تم") { pickDate = false }.fontWeight(.bold) }
-                    }
-                    Spacer(minLength: 0)
-                }
-                .presentationDetents([.medium, .large])
+                DayPickerSheet(title: "تاريخ السفرة", date: Binding(
+                    get: { trip.tripDate },
+                    set: { trip.tripDate = DF.startOfDay($0); SplitActions.commit() }
+                ), calendar: DF.primary)
             }
         }
         .alert("محطة جديدة", isPresented: $askStop) {

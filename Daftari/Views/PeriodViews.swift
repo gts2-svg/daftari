@@ -265,13 +265,11 @@ struct PeriodSheet: View {
                                     .font(.dyn(15))
                                     .padding(12)
                                     .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                DatePicker("يومها", selection: $newStoneDay, in: start...max(start, end), displayedComponents: .date)
-                                    .environment(\.calendar, cal)
-                                    .font(.dyn(15))
+                                DayField(label: "يومها", date: $newStoneDay, from: start, to: end, calendar: cal)
                                 HStack {
                                     Button("أضف المحطة") {
-                                        let t = newStoneTitle.trimmingCharacters(in: .whitespaces)
-                                        guard !t.isEmpty else { return }
+                                        let typed = newStoneTitle.trimmingCharacters(in: .whitespaces)
+                                        let t = typed.isEmpty ? "محطة" : typed
                                         stones.append(PeriodMilestone(title: t, day: newStoneDay))
                                         stones.sort { $0.day < $1.day }
                                         newStoneTitle = ""
@@ -279,7 +277,7 @@ struct PeriodSheet: View {
                                     }
                                     .font(.dyn(15, weight: .bold))
                                     .foregroundStyle(T.accent)
-                                    .disabled(newStoneTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+                                    .frame(minHeight: 44)
                                     Spacer()
                                     Button("إلغاء") { addingStone = false; newStoneTitle = "" }
                                         .font(.dyn(14)).foregroundStyle(T.muted)
@@ -372,12 +370,10 @@ struct PeriodSheet: View {
 
     private func dateRow(_ label: String, _ value: Binding<Date>) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            DatePicker(label, selection: Binding(
+            DayField(label: label, date: Binding(
                 get: { value.wrappedValue },
                 set: { value.wrappedValue = DF.startOfDay($0) }
-            ), displayedComponents: .date)
-            .environment(\.calendar, cal)
-            .font(.dyn(15, weight: .semibold))
+            ), calendar: cal)
             Text(verbatim: "\(DF.weekday(value.wrappedValue)) · \(DF.hijriText(value.wrappedValue)) · \(DF.gregText(value.wrappedValue))")
                 .font(.dyn(12)).foregroundStyle(T.muted)
         }
