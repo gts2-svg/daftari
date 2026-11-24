@@ -119,7 +119,7 @@ enum Demo {
         trip.toggle(trip.items[2].id)
         trip.toggle(trip.items[5].id)
         trip.tripDate = DF.addDays(3, to: today)
-        ctx.insert(northTrip)
+        ctx.insert(trip)
         let travel = PackList(name: "السفر")
         travel.add("الجواز\nالشاحن\nأدويتي")
         ctx.insert(travel)
